@@ -2,7 +2,7 @@
   <div class="table-select">
     <el-form v-if="showSearch" ref="queryForm" size="small" :inline="true" class="table-select__search">
       <el-form-item v-for="item in column" v-if="item.isSearch" :key="item.key" :label="item.label" :prop="item.key">
-        <el-input v-model="item.value" :placeholder="'请输入' + item.label" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="item.value" placeholder="请输入" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
@@ -41,7 +41,7 @@
       <pagination
           v-show="total>0"
           :total="total"
-          :page-sizes="[5, 10, 20, 30, 40]"
+          :page-sizes="[8, 10, 20, 30, 40]"
           :limit.sync="queryParams.pageSize"
           :page.sync="queryParams.pageNum"
           @pagination="getList"
@@ -95,7 +95,7 @@ export default {
     },
     reset() {
       this.queryParams.pageNum = 1;
-      this.queryParams.pageSize = 5;
+      this.queryParams.pageSize = 8;
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -145,11 +145,23 @@ export default {
 
   &__search {
     margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
 
     ::v-deep .el-form-item {
       margin-bottom: 8px;
-      margin-right: 10px;
+      margin-right: 12px;
     }
+    // 搜索按钮所在项不换行、紧跟其后
+    ::v-deep .el-form-item:last-child {
+      margin-right: 0;
+    }
+  }
+
+  // 搜索输入框统一宽度，排布整齐
+  &__input {
+    width: 180px;
   }
 
   &__footer {

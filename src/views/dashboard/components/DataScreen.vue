@@ -217,7 +217,7 @@
     </div>
 
     <!-- 项目选择弹窗 -->
-    <el-dialog title="选择项目" :visible.sync="openSelector" append-to-body width="700px">
+    <el-dialog title="选择项目" :visible.sync="openSelector" append-to-body width="700px" custom-class="screen-project-dialog">
       <TableSelect table="project" :column="projectColumn" @selectDone="selectProjectDone" />
     </el-dialog>
   </div>
@@ -1296,6 +1296,109 @@ $text-dim: #8bb4d8;
         padding: 2px 0;
       }
     }
+  }
+}
+
+/* ===== 大屏「选择项目」弹窗：深色风格，仅作用于本弹窗（custom-class 隔离） ===== */
+.screen-project-dialog {
+  background: rgba(10, 26, 46, 0.96);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+
+  .el-dialog__header {
+    border-bottom: 1px solid rgba(0, 212, 255, 0.18);
+    padding: 16px 20px;
+
+    .el-dialog__title {
+      color: #00d4ff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .el-dialog__headerbtn .el-dialog__close {
+      color: #8fb6d8;
+    }
+    .el-dialog__headerbtn:hover .el-dialog__close {
+      color: #00d4ff;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 16px 20px 20px;
+    color: #c0d8ef;
+  }
+
+  /* 搜索区输入框 */
+  .el-input__inner {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    color: #e6f2ff;
+    &::placeholder { color: rgba(192, 216, 239, 0.5); }
+    &:focus { border-color: #00d4ff; }
+  }
+  .el-input__icon { color: #8fb6d8; }
+
+  /* 搜索按钮 */
+  .el-button--primary {
+    background: linear-gradient(90deg, #0088cc, #00d4ff);
+    border-color: #00d4ff;
+    color: #04121f;
+    font-weight: 600;
+  }
+  .el-button--text {
+    color: #00d4ff;
+  }
+
+  /* 表格：深色底、去白边 */
+  .el-table,
+  .el-table__expanded-cell {
+    background: transparent;
+    color: #c0d8ef;
+  }
+  .el-table th.el-table__cell,
+  .el-table tr {
+    background: transparent;
+  }
+  .el-table thead th.el-table__cell {
+    background: rgba(0, 212, 255, 0.08);
+    color: #8fd8ff;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  }
+  .el-table td.el-table__cell,
+  .el-table th.el-table__cell.is-leaf {
+    border-bottom: 1px solid rgba(100, 162, 255, 0.12);
+  }
+  .el-table--border,
+  .el-table--border .el-table__cell {
+    border-color: rgba(100, 162, 255, 0.12);
+  }
+  .el-table::before,
+  .el-table--border::after {
+    background-color: rgba(100, 162, 255, 0.12);
+  }
+  /* 斑马纹 + hover 行 */
+  .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .el-table__body tr:hover > td.el-table__cell {
+    background: rgba(0, 212, 255, 0.12) !important;
+  }
+  /* 空数据文案 */
+  .el-table__empty-text { color: rgba(192, 216, 239, 0.6); }
+
+  /* 分页 */
+  .pagination-container { background: transparent; }
+  .el-pagination {
+    color: #c0d8ef;
+    button, .el-pager li {
+      background: rgba(255, 255, 255, 0.04);
+      color: #c0d8ef;
+    }
+    .el-pager li.active { color: #00d4ff; }
+    .el-pagination__total,
+    .el-pagination__jump { color: #8fb6d8; }
   }
 }
 </style>
