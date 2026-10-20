@@ -29,7 +29,14 @@
             :key="cmd.name + '_' + i"
             :command="opt"
           >
-            <i v-if="enumLabel(cmd) === opt.label" class="el-icon-check" style="color:#409eff;margin-right:4px;" />
+            <i
+              class="el-icon-check cmd-check"
+              :style="{
+                color: '#409eff',
+                marginRight: '4px',
+                visibility: enumLabel(cmd) === opt.label ? 'visible' : 'hidden'
+              }"
+            />
             {{ opt.label }}
           </el-dropdown-item>
         </el-dropdown-menu>
