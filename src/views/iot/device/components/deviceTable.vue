@@ -11,6 +11,7 @@
                 <span class="device-card__name">{{ device.name }}</span>
               </div>
               <div class="device-card__header-right">
+                <dict-tag class="device-card__net-type" :options="dict.type.iot_net_type" :value="device.product.netType" v-if="isShow('netType')"/>
                 <span class="device-card__online-dot" :class="device.online === 1 ? 'dot-online' : 'dot-offline'"></span>
                 <el-tooltip v-if="device.lastOnline && device.product.category !== 'ezviz'" effect="dark"
                             :content="'上线时间：'+parseTime(device.lastOnline)" placement="bottom">
@@ -33,7 +34,6 @@
               <div class="device-card__info">
                 <div class="device-card__tags">
                   <dict-tag :options="dict.type.iot_node_type" :value="device.product.nodeType" v-if="isShow('nodeType')"/>
-                  <dict-tag :options="dict.type.iot_net_type" :value="device.product.netType" v-if="isShow('netType')"/>
                   <el-tag type="danger" size="mini" v-if="isShow('status') && device.status==='1'">禁用</el-tag>
                 </div>
                 <div class="device-card__meta">
@@ -433,6 +433,21 @@ export default {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+/* 移到在线状态左侧的联网类型图标：缩小尺寸并与状态对齐 */
+.device-card__net-type {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 2px;
+
+  ::v-deep .el-button {
+    padding: 0;
+  }
+  ::v-deep .tag-icon {
+    font-size: 15px;
+    padding: 0;
+  }
 }
 
 .device-card__online-dot {
