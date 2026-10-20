@@ -1,0 +1,47 @@
+/* Apple Design System - Element UI Theme Override */
+
+$--color-primary: #0071e3;
+$--color-success: #34c759;
+$--color-warning: #ff9f0a;
+$--color-danger: #ff3b30;
+$--color-info: #6e6e73;
+
+$--color-text-primary: #1d1d1f;
+$--color-text-regular: #1d1d1f;
+$--color-text-secondary: #6e6e73;
+$--color-text-placeholder: #86868b;
+
+$--border-color-base: rgba(0, 0, 0, 0.08);
+$--border-color-light: rgba(0, 0, 0, 0.06);
+$--border-color-lighter: rgba(0, 0, 0, 0.04);
+$--border-color-extra-light: rgba(0, 0, 0, 0.02);
+
+$--background-color-base: #f5f5f7;
+
+$--border-radius-base: 8px;
+$--border-radius-small: 5px;
+
+$--button-font-weight: 400;
+
+$--font-path: '~element-ui/lib/theme-chalk/fonts';
+
+$--font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+  'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+  Arial, sans-serif;
+
+$--font-size-extra-large: 20px;
+$--font-size-large: 16px;
+$--font-size-medium: 15px;
+$--font-size-base: 14px;
+$--font-size-small: 13px;
+$--font-size-extra-small: 11px;
+
+$--table-border: 1px solid rgba(0, 0, 0, 0.06);
+
+@import "~element-ui/packages/theme-chalk/src/index";
+
+// the :export directive is the magic sauce for webpack
+// https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
+:export {
+  theme: $--color-primary;
+}
