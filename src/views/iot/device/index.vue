@@ -26,8 +26,8 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-input placeholder="请输入" v-model="queryParams.device" clearable>
-          <el-select v-model="select" slot="prepend" style="width: 100px;">
+        <el-input placeholder="请输入" v-model="queryParams.device" clearable class="device-search-input">
+          <el-select v-model="select" slot="prepend" class="device-search-prepend">
             <el-option label="设备地址" value="addr"></el-option>
             <el-option label="设备名称" value="name"></el-option>
           </el-select>
@@ -354,5 +354,35 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+// 「设备地址/设备名称」前置下拉：原生下拉箭头被项目样式隐藏了，
+// 这里用伪元素强制画一个向下箭头，明确提示「可下拉」。
+.device-search-input {
+  ::v-deep .el-input-group__prepend {
+    .el-select {
+      width: 96px;
+      position: relative;
 
+      // 文字右侧留出箭头空间
+      .el-input__inner {
+        padding-left: 10px;
+        padding-right: 22px;
+      }
+
+      // 用伪元素画下拉箭头（▾），紧跟文字右侧
+      &::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 9px;
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid #606266;
+        border-bottom: 1.5px solid #606266;
+        transform: translateY(-65%) rotate(45deg);
+        pointer-events: none;
+        z-index: 1;
+      }
+    }
+  }
+}
 </style>
