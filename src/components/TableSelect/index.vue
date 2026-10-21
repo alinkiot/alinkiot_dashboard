@@ -170,11 +170,16 @@ export default {
     justify-content: space-between;
     margin-top: 12px;
 
-    // 复用的 pagination 外层容器去掉自带内边距，交由 footer 统一控制
     ::v-deep .pagination-container {
       margin: 0;
-      padding: 0;
+      padding: 0 !important;
       background: transparent;
+      height: auto;
+      position: static;
+
+      .el-pagination {
+        position: static;
+      }
     }
   }
 }
