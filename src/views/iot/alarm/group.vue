@@ -104,9 +104,9 @@
         <!-- 成员管理（编辑时才显示） -->
         <el-tab-pane label="成员管理" name="members" :disabled="!form.id">
           <div style="margin-top:12px">
-            <InputTableSelect :multiple="true" showColumn="nickName" label="添加成员" table="user" @selectDone="selectDone" />
+            <el-button type="primary" size="small" icon="el-icon-plus" @click="openMemberSelector = true">添加成员</el-button>
             <el-divider v-if="users.length > 0" content-position="left">已添加成员（{{ users.length }} 人）</el-divider>
-            <el-empty v-if="users.length === 0" description="暂无成员，请从上方搜索添加" :image-size="80" />
+            <el-empty v-if="users.length === 0" description="暂无成员，点击上方添加" :image-size="80" style="margin-top:12px" />
             <div v-else class="member-list">
               <div v-for="user in users" :key="user.userId" class="member-item">
                 <i class="el-icon-user-solid member-avatar"></i>
@@ -123,16 +123,26 @@
         <el-button @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+
+    <!-- 成员选择弹窗 -->
+    <el-dialog title="选择成员" :visible.sync="openMemberSelector" width="600px" append-to-body>
+      <TableSelect
+        table="user"
+        :column="userColumn"
+        :multiple="true"
+        @selectDone="selectDone"
+      />
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import InputTableSelect from "@/components/InputTableSelect";
+import TableSelect from "@/components/TableSelect";
 import { queryObject, getObject, delObject, createObject, updateObject } from "@/api/iot/table";
 
 export default {
   name: "Group",
-  components: { InputTableSelect },
+  components: { TableSelect },
   dicts: ['sys_normal_disable'],
   data() {
     return {
@@ -149,8 +159,14 @@ export default {
       tableList: [],
       title: "",
       openDialog: false,
+      openMemberSelector: false,
       activeTab: 'info',
       column: [],
+      userColumn: [
+        { label: '用户ID', key: 'userId' },
+        { label: '用户名称', key: 'userName', isSearch: true, regx: true },
+        { label: '昵称', key: 'nickName', isSearch: true, regx: true }
+      ],
       queryParams: {
         pageNum: 1,
         pageSize: 10
@@ -228,13 +244,13 @@ export default {
       });
     },
     selectDone(users) {
-      // multiple 模式返回数组
       const selected = Array.isArray(users) ? users : (users ? [users] : []);
       selected.forEach(user => {
         if (user && !this.users.some(item => item.userId === user.userId)) {
           this.users.push({ userId: user.userId, userName: user.userName });
         }
       });
+      this.openMemberSelector = false;
     },
     removeUser(user) {
       this.users = this.users.filter(item => item.userId !== user.userId);
