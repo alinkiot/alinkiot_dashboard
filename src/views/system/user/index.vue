@@ -4,6 +4,7 @@
       <!--部门数据-->
       <el-col :span="4" :xs="24">
         <div class="head-container">
+          <div class="dept-title">部门</div>
           <el-input
             v-model="deptName"
             placeholder="请输入部门名称"
@@ -79,7 +80,6 @@
           <el-col :span="1.5">
             <el-button
               type="primary"
-
               icon="el-icon-plus"
               size="mini"
               @click="handleAdd"
@@ -89,7 +89,6 @@
           <el-col :span="1.5">
             <el-button
               type="success"
-
               icon="el-icon-edit"
               size="mini"
               :disabled="single"
@@ -100,7 +99,6 @@
           <el-col :span="1.5">
             <el-button
               type="danger"
-
               icon="el-icon-delete"
               size="mini"
               :disabled="multiple"
@@ -134,6 +132,7 @@
                 v-model="scope.row.status"
                 active-value="0"
                 inactive-value="1"
+                :loading="scope.row.statusLoading"
                 @change="handleStatusChange(scope.row)"
               ></el-switch>
             </template>
@@ -146,7 +145,7 @@
           <el-table-column
             label="操作"
             align="center"
-            width="160"
+            width="200"
             class-name="small-padding fixed-width"
           >
             <template slot-scope="scope" v-if="scope.row.userId !== 1">
@@ -194,6 +193,18 @@
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row>
           <el-col :span="12">
+            <el-form-item v-if="form.userId == undefined" label="用户名称" prop="userName">
+              <el-input v-model="form.userName" placeholder="请输入用户名称" maxlength="30" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item v-if="form.userId == undefined" label="用户密码" prop="password">
+              <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password/>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
             <el-form-item label="用户昵称" prop="nickName">
               <el-input v-model="form.nickName" placeholder="请输入用户昵称" maxlength="30" />
             </el-form-item>
@@ -213,18 +224,6 @@
           <el-col :span="12">
             <el-form-item label="邮箱" prop="email">
               <el-input v-model="form.email" placeholder="请输入邮箱" maxlength="50" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item v-if="form.userId == undefined" label="用户名称" prop="userName">
-              <el-input v-model="form.userName" placeholder="请输入用户名称" maxlength="30" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item v-if="form.userId == undefined" label="用户密码" prop="password">
-              <el-input v-model="form.password" placeholder="请输入用户密码" type="password" maxlength="20" show-password/>
             </el-form-item>
           </el-col>
         </el-row>
@@ -295,7 +294,29 @@
       </div>
     </el-dialog>
 
-    <!-- 用户导入对话框 -->
+    <!-- 分配角色对话框 -->
+    <el-dialog title="分配角色" :visible.sync="authRoleOpen" width="600px" @close="authRoleClose">
+      <div style="margin-bottom:16px">
+        <span style="margin-right:24px">用户昵称：<b>{{ authRoleForm.nickName }}</b></span>
+        <span>登录账号：<b>{{ authRoleForm.userName }}</b></span>
+      </div>
+      <el-table
+        v-loading="authRoleLoading"
+        :data="authRoleList"
+        :row-key="row => row.roleId"
+        ref="authRoleTable"
+        @row-click="row => $refs.authRoleTable.toggleRowSelection(row)"
+        @selection-change="sel => authRoleIds = sel.map(i => i.roleId)"
+      >
+        <el-table-column type="selection" :reserve-selection="true" width="50" align="center" />
+        <el-table-column label="角色名称" prop="roleName" />
+        <el-table-column label="权限字符" prop="roleKey" />
+      </el-table>
+      <div slot="footer">
+        <el-button type="primary" @click="submitAuthRole">确 定</el-button>
+        <el-button @click="authRoleClose">取 消</el-button>
+      </div>
+    </el-dialog>
 <!--    <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" >-->
 <!--      <el-upload-->
 <!--        ref="upload"-->
@@ -328,7 +349,7 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus } from "@/api/system/user";
+import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, getAuthRole, updateAuthRole } from "@/api/system/user";
 import { getToken } from "@/utils/auth";
 import { treeselect } from "@/api/system/dept";
 import Treeselect from "@riophae/vue-treeselect";
@@ -410,6 +431,12 @@ export default {
         { key: 5, label: `状态`, visible: true },
         { key: 6, label: `创建时间`, visible: true }
       ],
+      // 分配角色弹窗
+      authRoleOpen: false,
+      authRoleLoading: false,
+      authRoleForm: {},
+      authRoleList: [],
+      authRoleIds: [],
       // 表单校验
       rules: {
         userName: [
@@ -483,12 +510,15 @@ export default {
     // 用户状态修改
     handleStatusChange(row) {
       let text = row.status === "0" ? "启用" : "停用";
-      this.$modal.confirm('确认要"' + text + '""' + row.userName + '"用户吗？').then(function() {
+      this.$modal.confirm('确认要"' + text + '""' + row.userName + '"用户吗？').then(() => {
+        this.$set(row, 'statusLoading', true);
         return changeUserStatus(row.userId, row.status);
       }).then(() => {
         this.$modal.msgSuccess(text + "成功");
-      }).catch(function() {
+      }).catch(() => {
         row.status = row.status === "0" ? "1" : "0";
+      }).finally(() => {
+        this.$set(row, 'statusLoading', false);
       });
     },
     // 取消按钮
@@ -592,19 +622,45 @@ export default {
         inputErrorMessage: "用户密码长度必须介于 5 和 20 之间"
       }).then(({ value }) => {
           resetUserPwd(row.userId, value).then(response => {
-            this.$modal.msgSuccess("修改成功，新密码是：" + value);
+            this.$modal.msgSuccess("密码重置成功");
           });
         }).catch(() => {});
     },
     /** 分配角色操作 */
-    handleAuthRole: function(row) {
-      const userId = row.userId;
-      const project = this.$route.params.project;
-      if(project){
-        this.$router.push("/"+ project + "/system/user-auth/role/" + userId);
-      }else{
-        this.$router.push("/system/user-auth/role/" + userId);
-      }
+    handleAuthRole(row) {
+      this.authRoleForm = {};
+      this.authRoleList = [];
+      this.authRoleIds = [];
+      this.authRoleLoading = true;
+      this.authRoleOpen = true;
+      getAuthRole(row.userId).then(response => {
+        this.authRoleForm = response.user;
+        this.authRoleList = response.roles;
+        this.authRoleLoading = false;
+        this.$nextTick(() => {
+          response.roles.forEach(role => {
+            if (role.flag) {
+              this.$refs.authRoleTable.toggleRowSelection(role, true);
+            }
+          });
+        });
+      });
+    },
+    /** 分配角色关闭 */
+    authRoleClose() {
+      this.authRoleOpen = false;
+      this.$refs.authRoleTable && this.$refs.authRoleTable.clearSelection();
+    },
+    /** 分配角色提交 */
+    submitAuthRole() {
+      updateAuthRole({
+        userId: this.authRoleForm.userId,
+        roleIds: this.authRoleIds.join(',')
+      }).then(() => {
+        this.$modal.msgSuccess("授权成功");
+        this.authRoleClose();
+        this.getList();
+      });
     },
     /** 提交按钮 */
     submitForm: function() {
@@ -629,7 +685,8 @@ export default {
     /** 删除按钮操作 */
     handleDelete(row) {
       const userIds = row.userId || this.ids;
-      this.$modal.confirm('是否确认删除用户编号为"' + userIds + '"的数据项？').then(function() {
+      const userName = row.userName || '所选用户';
+      this.$modal.confirm('是否确认删除用户"' + userName + '"？').then(function() {
         return delUser(userIds);
       }).then(() => {
         this.getList();
@@ -671,3 +728,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.dept-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+}
+</style>
