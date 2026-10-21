@@ -104,7 +104,7 @@
         <!-- 成员管理（编辑时才显示） -->
         <el-tab-pane label="成员管理" name="members" :disabled="!form.id">
           <div style="margin-top:12px">
-            <InputTableSelect showColumn="nickName" label="添加成员" table="user" @selectDone="selectDone" />
+            <InputTableSelect :multiple="true" showColumn="nickName" label="添加成员" table="user" @selectDone="selectDone" />
             <el-divider v-if="users.length > 0" content-position="left">已添加成员（{{ users.length }} 人）</el-divider>
             <el-empty v-if="users.length === 0" description="暂无成员，请从上方搜索添加" :image-size="80" />
             <div v-else class="member-list">
@@ -227,11 +227,14 @@ export default {
         this.title = "编辑" + this.desc;
       });
     },
-    selectDone(user) {
-      const exists = this.users.some(item => item.userId === user.userId);
-      if (!exists) {
-        this.users.push({ userId: user.userId, userName: user.userName });
-      }
+    selectDone(users) {
+      // multiple 模式返回数组
+      const selected = Array.isArray(users) ? users : (users ? [users] : []);
+      selected.forEach(user => {
+        if (user && !this.users.some(item => item.userId === user.userId)) {
+          this.users.push({ userId: user.userId, userName: user.userName });
+        }
+      });
     },
     removeUser(user) {
       this.users = this.users.filter(item => item.userId !== user.userId);
