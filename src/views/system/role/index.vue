@@ -126,7 +126,7 @@
             icon="el-icon-user"
             @click="handleAuthUser(scope.row)"
             v-hasPermi="['system:role:edit']"
-          >分配用户</el-button>
+          >查看用户</el-button>
 <!--          <el-dropdown size="mini" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:role:edit']">-->
 <!--            <span class="el-dropdown-link">-->
 <!--              <i class="el-icon-d-arrow-right el-icon&#45;&#45;right"></i>更多-->
