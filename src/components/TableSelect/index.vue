@@ -145,17 +145,14 @@ export default {
   padding: 4px 2px;
 
   &__search {
-    margin-bottom: 12px;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-bottom: 8px;
 
     ::v-deep .el-form-item {
-      margin-bottom: 8px;
-      margin-right: 12px;
-    }
-    // 搜索按钮所在项不换行、紧跟其后
-    ::v-deep .el-form-item:last-child {
+      margin-bottom: 0;
       margin-right: 0;
     }
   }

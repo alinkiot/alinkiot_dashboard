@@ -163,7 +163,6 @@ export default {
       activeTab: 'info',
       column: [],
       userColumn: [
-        { label: '用户ID', key: 'userId' },
         { label: '用户名称', key: 'userName', isSearch: true, regx: true },
         { label: '昵称', key: 'nickName', isSearch: true, regx: true }
       ],
