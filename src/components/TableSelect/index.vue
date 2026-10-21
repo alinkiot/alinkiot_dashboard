@@ -167,8 +167,7 @@ export default {
   &__footer {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
+    justify-content: space-between;
     margin-top: 12px;
 
     // 复用的 pagination 外层容器去掉自带内边距，交由 footer 统一控制
