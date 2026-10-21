@@ -116,22 +116,29 @@ export default {
   width: 150px !important;
 }
 
-/* 不再无缝拼接：恢复左下拉右边框与圆角、右下拉左圆角，避免缺边/错位。
-   注意：边框颜色用 inherit，继承输入框自身边框色，适配深色主题，
-   不要硬编码浅色（否则深色背景下会显白）。 */
+
+
 .input-left-sel ::v-deep .el-input__inner {
   border-right-width: 1px !important;
   border-right-style: solid !important;
+  border-right-color: #dcdfe6 !important;
   border-top-right-radius: 4px !important;
   border-bottom-right-radius: 4px !important;
 }
-.input-right-sel ::v-deep .el-input__inner {
-  border-top-left-radius: 4px !important;
-  border-bottom-left-radius: 4px !important;
-}
 
-/* 绝对时间的日期范围选择器宽度保持原设计 */
+/* 深色主题下边框色与 theme-dark.scss 保持一致 */
 ::v-deep .el-date-editor--datetimerange {
   width: 340px !important;
+}
+</style>
+
+<!-- 深色主题需要从 body class 向下选，不能用 scoped -->
+<style lang="scss">
+.theme-dark,
+.theme-dark-blue,
+.theme-green {
+  .input-left-sel .el-input__inner {
+    border-right-color: rgba(255, 255, 255, 0.1) !important;
+  }
 }
 </style>
