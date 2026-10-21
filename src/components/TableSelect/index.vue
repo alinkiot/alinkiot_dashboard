@@ -44,6 +44,7 @@
           :page-sizes="[8, 10, 20, 30, 40]"
           :limit.sync="queryParams.pageSize"
           :page.sync="queryParams.pageNum"
+          layout="prev, pager, next"
           @pagination="getList"
       />
     </div>
