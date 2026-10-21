@@ -1,0 +1,103 @@
+// === Apple Design System Tokens ===
+// Inspired by Apple's design language, adapted for dashboard use
+
+// === Colors ===
+
+// Accent (the ONLY interactive color)
+$apple-blue: #0071e3;
+$apple-blue-hover: #0077ed;
+$apple-blue-active: #006edb;
+$apple-blue-light: rgba(0, 113, 227, 0.08);
+$link-blue: #0066cc;
+$link-blue-dark-bg: #2997ff;
+
+// Surfaces
+$surface-primary: #ffffff;
+$surface-secondary: #f5f5f7;
+$surface-tertiary: #fbfbfd;
+$surface-elevated: #ffffff;
+
+// Dark surfaces
+$dark-surface-1: #1d1d1f;
+$dark-surface-2: #242426;
+$dark-surface-3: #2a2a2d;
+$dark-surface-4: #272729;
+$dark-surface-5: #28282a;
+
+// Text
+$text-primary: #1d1d1f;
+$text-secondary: #6e6e73;
+$text-tertiary: #86868b;
+$text-inverse: #f5f5f7;
+
+// Borders & Dividers
+$border-default: rgba(0, 0, 0, 0.08);
+$border-subtle: rgba(0, 0, 0, 0.04);
+$border-dark: rgba(255, 255, 255, 0.08);
+
+// Semantic
+$color-success: #34c759;
+$color-warning: #ff9f0a;
+$color-danger: #ff3b30;
+$color-info: #6e6e73;
+
+// === Typography ===
+$font-system: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+  'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+  Arial, sans-serif;
+
+// Size scale
+$text-size-hero: 56px;
+$text-size-title1: 40px;
+$text-size-title2: 28px;
+$text-size-title3: 22px;
+$text-size-headline: 17px;
+$text-size-body: 15px;
+$text-size-callout: 13px;
+$text-size-caption: 11px;
+
+// Line heights
+$lh-headline: 1.1;
+$lh-body: 1.47;
+$lh-tight: 1.07;
+
+// Letter spacing
+$ls-tight: -0.025em;
+$ls-normal: -0.015em;
+$ls-loose: -0.01em;
+
+// Weights
+$weight-light: 300;
+$weight-regular: 400;
+$weight-medium: 500;
+$weight-semibold: 600;
+$weight-bold: 700;
+
+// === Spacing (8px base unit) ===
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 16px;
+$space-4: 24px;
+$space-5: 32px;
+$space-6: 40px;
+$space-8: 64px;
+
+// === Radius ===
+$radius-sm: 5px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-pill: 980px;
+
+// === Shadows ===
+$shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+$shadow-card-hover: 0 3px 5px 30px rgba(0, 0, 0, 0.08);
+$shadow-elevated: 0 5px 30px rgba(0, 0, 0, 0.22);
+$shadow-nav: 0 1px 0 rgba(0, 0, 0, 0.06);
+
+// === Navigation ===
+$nav-bg: rgba(251, 251, 253, 0.72);
+$nav-blur: saturate(180%) blur(20px);
+$sidebar-width-apple: 260px;
+$navbar-height: 52px;
+$tags-height: 38px;
