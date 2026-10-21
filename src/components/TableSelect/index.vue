@@ -2,10 +2,10 @@
   <div class="table-select">
     <el-form v-if="showSearch" ref="queryForm" size="small" :inline="true" class="table-select__search">
       <el-form-item v-for="item in column" v-if="item.isSearch" :key="item.key" :label="item.label" :prop="item.key">
-        <el-input v-model="item.value" placeholder="请输入" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="item.value" placeholder="回车搜索" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button icon="el-icon-refresh" size="small" @click="handleReset" title="重置">重置</el-button>
       </el-form-item>
     </el-form>
     <el-table
@@ -103,6 +103,11 @@ export default {
       this.queryParams.pageNum = 1;
       this.getList();
     },
+    /** 重置搜索 */
+    handleReset() {
+      this.column.forEach(item => { if (item.isSearch) item.value = undefined; });
+      this.handleQuery();
+    },
     /** 查询列表 */
     getList() {
       this.loading = true;
@@ -147,7 +152,7 @@ export default {
   &__search {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 8px;
 
