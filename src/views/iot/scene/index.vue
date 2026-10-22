@@ -87,7 +87,11 @@
                 <i v-else class="el-icon-monitor"></i>
               </div>
               <div class="scene-card-title">{{ sceneItem.title }}</div>
-              <dict-tag :options="dict.type.sys_normal_disable" :value="sceneItem.status"/>
+              <dict-tag
+                class="scene-card-status"
+                :options="dict.type.sys_normal_disable"
+                :value="sceneItem.status"
+              />
             </div>
             <div class="scene-card-description">{{ sceneItem.remark || '暂无描述' }}</div>
             <div class="scene-card-footer">
@@ -96,7 +100,7 @@
                 <span v-if="sceneItem.createTime">{{ parseTime(sceneItem.createTime, '{y}-{m}-{d}') }}</span>
               </div>
               <div class="scene-card-actions">
-                <el-button size="mini" type="text" icon="el-icon-info" @click="goEditScene(sceneItem)">查看</el-button>
+                <el-button size="mini" type="text" icon="el-icon-info" @click="openScenePreview(sceneItem)">查看</el-button>
                 <el-button
                   size="mini"
                   type="text"
@@ -182,6 +186,32 @@
         <el-button size="mini" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+    <el-dialog
+      :visible.sync="previewVisible"
+      width="90%"
+      top="5vh"
+      append-to-body
+      destroy-on-close
+      custom-class="scene-preview-dialog"
+    >
+      <div slot="title" class="scene-preview-title">
+        <span>场景预览：{{ previewSceneTitle }}</span>
+        <el-button
+          type="text"
+          :icon="previewEdit ? 'el-icon-unlock' : 'el-icon-lock'"
+          :style="previewEdit ? '' : 'color: silver'"
+          @click="$refs.scenePreview.openEdit()"
+          v-hasPermi="['system:scene:edit']"
+        />
+      </div>
+      <ScenePreview
+        v-if="previewSceneId !== undefined"
+        ref="scenePreview"
+        :scene-id="previewSceneId"
+        preview-only
+        @edit-change="previewEdit = $event"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -190,6 +220,7 @@ import InputTableSelect from "@/components/InputTableSelect";
 import { queryObject, delObject, createObject, updateObject } from "@/api/iot/table";
 import {validateCheck} from "@/assets/js/iot";
 import IconSelect from "@/components/IconSelect/index.vue";
+import ScenePreview from "./edit.vue";
 
 export default {
   name: "Scene",
@@ -200,7 +231,8 @@ export default {
   ],
   components: {
     IconSelect,
-    InputTableSelect
+    InputTableSelect,
+    ScenePreview
   },
   data() {
     return {
@@ -221,6 +253,10 @@ export default {
       scene: { },
       project: {},
       projectList: [],
+      previewVisible: false,
+      previewSceneId: undefined,
+      previewSceneTitle: '',
+      previewEdit: false,
       sceneQuery: {},
       open: false,
       // 查询参数
@@ -344,19 +380,11 @@ export default {
       this.sceneQuery = { ids: this.ids.join(',') };
       this.multiple = this.ids.length === 0;
     },
-    goEditScene(row) {
-      const project = this.$route.params.project
-      if(project){
-        this.$router.push({
-          path: '/' + project + '/project/sceneEdit',
-          query: {id: row.id}
-        });
-      }else{
-        this.$router.push({
-          path: '/project/sceneEdit',
-          query: {id: row.id}
-        });
-      }
+    openScenePreview(row) {
+      this.previewSceneTitle = row.title;
+      this.previewSceneId = row.id;
+      this.previewEdit = false;
+      this.previewVisible = true;
     },
     handleEdit(row) {
       const scene = JSON.parse(JSON.stringify(row));
@@ -602,6 +630,18 @@ export default {
   white-space: nowrap;
 }
 
+.scene-card-status {
+  flex: 0 0 auto;
+  font-size: 11px;
+
+  ::v-deep .el-tag {
+    height: 20px;
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 18px;
+  }
+}
+
 .scene-card-description {
   overflow: hidden;
   height: 18px;
@@ -650,7 +690,17 @@ export default {
   }
 }
 
+::v-deep .scene-preview-dialog {
+  .el-dialog__body {
+    padding: 0;
+  }
+}
+
 @media (max-width: 600px) {
+  ::v-deep .scene-preview-dialog {
+    width: 96% !important;
+  }
+
   .scene-layout {
     flex-direction: column;
   }

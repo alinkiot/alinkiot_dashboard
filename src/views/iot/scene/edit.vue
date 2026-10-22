@@ -1,10 +1,10 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" :class="{ 'scene-preview-container': previewOnly }">
     <el-container  v-loading="loading">
       <el-aside
         width="250px"
         style="margin-right: 10px; min-height: 500px"
-        v-if="!single"
+        v-if="!single && !previewOnly"
       >
         <el-menu
           :defaultActive="defaultActive"
@@ -41,7 +41,7 @@
         <el-empty description="找不到场景"  v-else />
       </el-aside>
       <el-container style="padding: 0px">
-          <el-header v-if="scene.title">
+          <el-header v-if="scene.title && !previewOnly">
             <span class="title-dev">场景：{{ scene.title }}</span>
             <el-tooltip
               class="item"
@@ -123,7 +123,12 @@
           <el-footer style="height: 22px;"></el-footer>
       </el-container>
     </el-container>
-    <el-dialog :title="device ? device.name : '当前状态'" :visible.sync="showStatus" custom-class="status-dialog" >
+    <el-dialog
+      :title="device ? device.name : '当前状态'"
+      :visible.sync="showStatus"
+      append-to-body
+      custom-class="status-dialog"
+    >
       <DeviceBoard :devId="selDevId" @deviceChange="deviceChange" />
     </el-dialog>
   </div>
@@ -142,6 +147,16 @@ import { getDicts } from "@/api/system/dict/data";
 // import screenfull from "screenfull";
 export default {
   name: "SceneEdit",
+  props: {
+    sceneId: {
+      type: [String, Number],
+      default: undefined
+    },
+    previewOnly: {
+      type: Boolean,
+      default: false
+    }
+  },
   dicts: [],
   components: {
     DeviceTable,
@@ -170,8 +185,11 @@ export default {
     };
   },
   created() {
-    const ids = this.$route.query.ids;
-    if (ids) {
+    if (this.previewOnly && this.sceneId !== undefined && this.sceneId !== null) {
+      this.single = true;
+      this.queryScene(this.sceneId);
+    } else if (this.$route.query.ids) {
+      const ids = this.$route.query.ids;
       this.single = false;
       this.queryScene(ids);
     } else {
@@ -183,6 +201,9 @@ export default {
   methods: {
     openEdit() {
       this.isEdit = !this.isEdit;
+      if (this.previewOnly) {
+        this.$emit("edit-change", this.isEdit);
+      }
     },
     handleSelect(key, keyPath) {
       const items = this.menuData.filter((item) => item.name === keyPath[0]);
@@ -336,6 +357,11 @@ export default {
   height: calc(100vh - 90px);
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.app-container.scene-preview-container {
+  height: 78vh;
+  padding: 12px;
 }
 
 .app-container > .el-container {

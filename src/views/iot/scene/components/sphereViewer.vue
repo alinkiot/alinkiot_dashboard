@@ -18,8 +18,16 @@
           size="mini"
           @click="goAddMarker"
           v-hasPermi="['system:scene:edit']">
-          <span v-if="action ==='start'">开始锚点</span>
-          <span v-if="action ==='stop'">正在锚点，查看({{markers.length}})</span>
+          <span>{{ action === 'start' ? '开始打点' : '结束打点' }}</span>
+        </el-button>
+        <el-button
+          v-if="scene_data && markers.length"
+          type="primary"
+          icon="el-icon-location-outline"
+          size="mini"
+          @click="openAddPosition = true"
+          v-hasPermi="['system:scene:edit']">
+          管理标记（{{ markers.length }}）
         </el-button>
       </el-col>
     </el-row>
@@ -27,7 +35,7 @@
       <el-empty description="暂无全景图" v-if="!scene_data"/>
       <div id="viewBox"></div>
     </div>
-    <el-dialog title="上传全景图" :visible.sync="openPicSelector">
+    <el-dialog title="上传全景图" :visible.sync="openPicSelector" append-to-body>
       <el-form ref="form" :model="form" label-width="100px">
         <el-form-item label="全景图">
           <ImageUpload :limit=1 :value="form.path"  @input="handleFile"/>
@@ -51,7 +59,8 @@
     <el-dialog
       title="选择设备"
       :visible.sync="openSelectDevice"
-      width="55%">
+      width="55%"
+      append-to-body>
       <DeviceTable
         :buttons="buttons"
         :queryParams="queryParams"
@@ -60,10 +69,11 @@
       />
     </el-dialog>
     <el-drawer
-      :title="'当前已添加：'+ markers.length"
+      :title="'标记管理：'+ markers.length"
       :visible.sync="openAddPosition"
       size="40%"
-      direction="rtl">
+      direction="rtl"
+      append-to-body>
       <el-card shadow="never">
         <el-collapse accordion>
           <el-collapse-item v-for="marker in markers" :name="marker.id" :key="marker.id">
@@ -223,19 +233,18 @@ export default {
     },
     onSelectDevice(event, device){
       if(event === 'selectDevice'){
+        if (!this.currenMarker || !device) {
+          return;
+        }
         this.openSelectDevice = false;
         this.currenMarker.listContent = device.name;
         const tooltip = this.currenMarker.tooltip;
         tooltip.content = device.name;
         this.currenMarker.tooltip = tooltip;
-        let data = this.currenMarker.data;
-        if(!data){
-          data = { 'devId': device.id }
-        }
+        const data = this.currenMarker.data || {};
+        data.devId = device.id;
         data.addr = device.addr;
         this.currenMarker.data = data;
-      }else{
-        // 多选
       }
 
     },
@@ -258,11 +267,13 @@ export default {
         id: this.scene_data.id,
         data: JSON.stringify(new_data)
       };
-      updateObject('scene_view', params).then(response => {
+      updateObject('scene_view', params).then(() => {
         this.action = 'start';
         this.openAddPosition = false;
         this.$modal.msgSuccess("保存成功!");
         this.sceneChange();
+      }).catch(() => {
+        this.$modal.msgError("标记保存失败");
       })
     },
     cleanAllMarkers() {
@@ -279,7 +290,7 @@ export default {
       this.queryParams = {
           pageNum: 1,
           pageSize: 10,
-          scene: this.scene.id
+          project: this.scene.project
       };
       this.queryParams["orderby[desc]"] = "createTime";
     },
@@ -287,6 +298,7 @@ export default {
       if(this.action === 'start'){
         this.action = 'stop';
       }else{
+        this.action = 'start';
         this.openAddPosition = true;
       }
     },
@@ -297,6 +309,10 @@ export default {
       this.scene_data = undefined;
       this.subscription = { };
       this.form = {};
+      this.action = 'start';
+      this.openPicSelector = false;
+      this.openAddPosition = false;
+      this.openSelectDevice = false;
       if(this.viewer){
         this.cleanAllMarkers();
         this.viewer.destroy();
@@ -373,7 +389,11 @@ export default {
       this.markersPlugin = this.viewer.getPlugin(MarkersPlugin);
       this.markersPlugin.on("select-marker", (e, marker, event) => {
         const data = marker.data;
-        this.$emit('click', data.devId);
+        if (data && data.devId) {
+          this.$emit('click', data.devId);
+        } else {
+          this.$modal.msgWarning("该标记尚未绑定设备");
+        }
       });
       this.viewer.once('ready', () => {
         this.showAllTip = true;
@@ -494,14 +514,12 @@ export default {
         post.id = this.scene_data.id;
         updateObject('scene_view', post).then(response => {
           this.openPicSelector = false;
-          this.edit = false;
           this.sceneChange();
           this.$modal.msgSuccess("修改成功");
         })
       }else{
         createObject('scene_view', post).then(response => {
           this.openPicSelector = false;
-          this.edit = false;
           this.$modal.msgSuccess("创建成功");
           this.sceneChange();
         })
