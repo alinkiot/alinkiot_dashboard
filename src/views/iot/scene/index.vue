@@ -32,14 +32,27 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
+            v-if="!selectionMode"
             type="danger"
-
             icon="el-icon-delete"
             size="mini"
-            :disabled="multiple"
+            @click="startSelection"
+            v-hasPermi="['system:scene:remove']"
+        >选择删除</el-button>
+        <el-button
+            v-else
+            type="danger"
+            icon="el-icon-delete"
+            size="mini"
+            :disabled="ids.length === 0"
             @click="handleDelete"
             v-hasPermi="['system:scene:remove']"
-        >删除</el-button>
+        >删除{{ ids.length ? `（${ids.length}）` : '' }}</el-button>
+        <el-button
+            v-if="selectionMode"
+            size="mini"
+            @click="cancelSelection"
+        >取消</el-button>
       </el-col>
       <right-toolbar
         component="iot/scene/edit"
@@ -79,6 +92,7 @@
           <el-card v-for="sceneItem in tableList" :key="sceneItem.id" class="scene-card" shadow="never">
             <div class="scene-card-heading">
               <el-checkbox
+                v-if="selectionMode"
                 :value="ids.includes(sceneItem.id)"
                 @change="checked => toggleSceneSelection(sceneItem, checked)"
               />
@@ -190,18 +204,27 @@
       :visible.sync="previewVisible"
       width="90%"
       top="5vh"
+      :fullscreen="previewMaximized"
       append-to-body
       destroy-on-close
-      custom-class="scene-preview-dialog"
+      :custom-class="previewMaximized ? 'scene-preview-dialog scene-preview-dialog--maximized' : 'scene-preview-dialog'"
+      @closed="previewMaximized = false"
     >
       <div slot="title" class="scene-preview-title">
-        <span>场景预览：{{ previewSceneTitle }}</span>
+        <span>场景：{{ previewSceneTitle }}</span>
         <el-button
           type="text"
           :icon="previewEdit ? 'el-icon-unlock' : 'el-icon-lock'"
           :style="previewEdit ? '' : 'color: silver'"
           @click="$refs.scenePreview.openEdit()"
           v-hasPermi="['system:scene:edit']"
+        />
+        <el-button
+          class="scene-preview-maximize"
+          type="text"
+          :icon="previewMaximized ? 'el-icon-copy-document' : 'el-icon-full-screen'"
+          :title="previewMaximized ? '还原' : '最大化'"
+          @click="previewMaximized = !previewMaximized"
         />
       </div>
       <ScenePreview
@@ -242,6 +265,7 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
+      selectionMode: false,
       // 非多个禁用
       multiple: true,
       // 显示搜索条件
@@ -257,6 +281,7 @@ export default {
       previewSceneId: undefined,
       previewSceneTitle: '',
       previewEdit: false,
+      previewMaximized: false,
       sceneQuery: {},
       open: false,
       // 查询参数
@@ -380,10 +405,21 @@ export default {
       this.sceneQuery = { ids: this.ids.join(',') };
       this.multiple = this.ids.length === 0;
     },
+    startSelection() {
+      this.selectionMode = true;
+      this.ids = [];
+      this.multiple = true;
+    },
+    cancelSelection() {
+      this.selectionMode = false;
+      this.ids = [];
+      this.multiple = true;
+    },
     openScenePreview(row) {
       this.previewSceneTitle = row.title;
       this.previewSceneId = row.id;
       this.previewEdit = false;
+      this.previewMaximized = false;
       this.previewVisible = true;
     },
     handleEdit(row) {
@@ -424,11 +460,16 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row && row.id ? row.id : this.ids;
+      const rowId = row && row.id;
+      if (rowId === undefined && this.ids.length === 0) {
+        return;
+      }
+      const ids = rowId !== undefined ? rowId : this.ids;
       const table = this.table;
       this.$modal.confirm('是否确认删除'+this.desc+'ID为"' + ids + '"的数据项？').then(function() {
         return delObject(table, ids);
       }).then(() => {
+        this.cancelSelection();
         this.getList();
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
@@ -694,6 +735,27 @@ export default {
   .el-dialog__body {
     padding: 0;
   }
+}
+
+::v-deep .scene-preview-dialog--maximized .scene-preview-container {
+  height: calc(100vh - 54px);
+}
+
+.scene-preview-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+::v-deep .scene-preview-maximize {
+  position: absolute;
+  top: 20px;
+  right: 50px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  line-height: 16px;
 }
 
 @media (max-width: 600px) {
