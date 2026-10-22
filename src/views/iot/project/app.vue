@@ -1,6 +1,23 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="search-form">
+      <el-form-item label="所属项目" prop="project">
+        <el-select
+          v-model="queryParams.project"
+          placeholder="全部项目"
+          clearable
+          filterable
+          @change="handleQuery"
+        >
+          <el-option label="全部项目" value="" />
+          <el-option
+            v-for="project in projectOptions"
+            :key="project.id"
+            :label="project.title"
+            :value="project.id"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item v-for="item in column" v-if="item.isSearch" :label="item.label" :key="item.key" :prop="item.key">
         <el-input v-model="item.value" :placeholder="item.label" clearable/>
       </el-form-item>
@@ -173,13 +190,15 @@ export default {
       // 查询参数
       queryParams: {
         pageNum: 1,
-        pageSize: 10
+        pageSize: 10,
+        project: ''
       },
       app: undefined,
       openSync: false,
       // 表单参数
       form: { name: '', appid : '',  secret:'', expire:7200, syncStatus: 'wait' },
       projects: [],
+      projectOptions: [],
       // 表单校验
       rules: {
         name: [
@@ -205,15 +224,44 @@ export default {
       // {label:'AppID', key:'appid'},
       {label:'备注', key:'remark'}
     ];
+    this.getProjectOptions();
     this.getList();
   },
   methods: {
+    getProjectOptions() {
+      const pageSize = 100;
+      const projectOptions = [];
+      const projectIds = new Set();
+      const loadPage = pageNum => queryObject('project', { pageNum, pageSize }).then(response => {
+        const rows = Array.isArray(response.rows) ? response.rows : [];
+        const newProjects = rows.filter(project => {
+          const id = String(project.id);
+          if (projectIds.has(id)) {
+            return false;
+          }
+          projectIds.add(id);
+          return true;
+        });
+        projectOptions.push(...newProjects);
+
+        const total = Number(response.total);
+        const hasLoadedAll = (total > 0 && projectOptions.length >= total) || rows.length < pageSize || newProjects.length === 0;
+        if (!hasLoadedAll) {
+          return loadPage(pageNum + 1);
+        }
+        this.projectOptions = projectOptions;
+      });
+      loadPage(1).catch(() => {
+        this.$modal.msgError('项目列表加载失败');
+      });
+    },
     /** 查询列表 */
     getList() {
       this.loading = true;
       const query = {
         pageNum: this.queryParams.pageNum,
-        pageSize: this.queryParams.pageSize
+        pageSize: this.queryParams.pageSize,
+        project: this.queryParams.project || undefined
       };
       this.column.filter(item => {
         if(item.isSearch && item.value && item !== ''){

@@ -2,7 +2,7 @@
   <div class="table-select">
     <el-form v-if="showSearch" ref="queryForm" size="small" :inline="true" class="table-select__search">
       <el-form-item v-for="item in column" v-if="item.isSearch" :key="item.key" :label="item.label" :prop="item.key">
-        <el-input v-model="item.value" placeholder="回车搜索" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
+        <el-input v-model="item.value" placeholder="请输入" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
         <el-button icon="el-icon-search" type="primary" size="small" @click="handleQuery">搜索</el-button>

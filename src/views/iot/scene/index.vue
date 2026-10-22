@@ -4,7 +4,6 @@
       <el-form-item label="场景名称" prop="title">
         <el-input v-model="queryParams.title" placeholder="请输入场景名称" clearable/>
       </el-form-item>
-      <InputTableSelect :queryId="project.id" showColumn="title" label="所属项目" table="project" @selectDone="selectProjectDone"/>
       <el-form-item label="禁用状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="状态" clearable>
           <el-option
@@ -51,54 +50,74 @@
         @download="handleExport"/>
     </el-row>
 
-    <el-table v-loading="loading" :data="tableList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column align="center" label="场景ID" prop="id" width="60"></el-table-column>
-      <el-table-column align="center" label="场景名称" min-width="140" show-overflow-tooltip>
-        <template slot-scope="scope">
-            <svg-icon v-if="scope.row.icon" style="margin-right: 5px;" :icon-class="scope.row.icon"/>
-            <el-link type="primary" @click="goEditScene(scope.row)">
-              {{scope.row.title}}
-            </el-link>
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="所属项目" prop="project" :formatter="formatRow" min-width="120" show-overflow-tooltip></el-table-column>
-      <el-table-column align="center" label="描述" prop="remark" min-width="180" show-overflow-tooltip></el-table-column>
-      <el-table-column label="禁用状态" align="center" prop="status">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-info"
-            @click="goEditScene(scope.row)"
-          >查看</el-button>
-          <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-edit-outline"
-              @click="handleEdit(scope.row)"
-              v-hasPermi="['system:scene:edit']"
-          >编辑</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination
-        v-show="total>0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-    />
+    <div class="scene-layout">
+      <aside class="scene-project-menu">
+        <div class="scene-project-menu-title">
+          <span>项目</span>
+          <span class="scene-project-count">{{ projectList.length }}</span>
+        </div>
+        <el-menu :default-active="activeProjectKey" @select="handleProjectSelect">
+          <el-menu-item
+            v-for="item in projectList"
+            :key="item.id"
+            :index="String(item.id)"
+            class="scene-project-item"
+          >
+            <i class="el-icon-folder"></i>
+            <span slot="title" class="scene-project-name">{{ item.title }}</span>
+          </el-menu-item>
+        </el-menu>
+      </aside>
+      <div v-loading="loading" class="scene-content">
+        <div class="scene-content-header">
+          <div>
+            <h2>{{ activeProjectTitle }}</h2>
+            <span>共 {{ total }} 个场景</span>
+          </div>
+        </div>
+        <div v-if="tableList.length" class="scene-cards">
+          <el-card v-for="sceneItem in tableList" :key="sceneItem.id" class="scene-card" shadow="never">
+            <div class="scene-card-heading">
+              <el-checkbox
+                :value="ids.includes(sceneItem.id)"
+                @change="checked => toggleSceneSelection(sceneItem, checked)"
+              />
+              <div class="scene-card-icon">
+                <svg-icon v-if="sceneItem.icon" :icon-class="sceneItem.icon"/>
+                <i v-else class="el-icon-monitor"></i>
+              </div>
+              <div class="scene-card-title">{{ sceneItem.title }}</div>
+              <dict-tag :options="dict.type.sys_normal_disable" :value="sceneItem.status"/>
+            </div>
+            <div class="scene-card-description">{{ sceneItem.remark || '暂无描述' }}</div>
+            <div class="scene-card-footer">
+              <div class="scene-card-meta">
+                <span>ID: {{ sceneItem.id }}</span>
+                <span v-if="sceneItem.createTime">{{ parseTime(sceneItem.createTime, '{y}-{m}-{d}') }}</span>
+              </div>
+              <div class="scene-card-actions">
+                <el-button size="mini" type="text" icon="el-icon-info" @click="goEditScene(sceneItem)">查看</el-button>
+                <el-button
+                  size="mini"
+                  type="text"
+                  icon="el-icon-edit-outline"
+                  @click="handleEdit(sceneItem)"
+                  v-hasPermi="['system:scene:edit']"
+                >编辑</el-button>
+              </div>
+            </div>
+          </el-card>
+        </div>
+        <el-empty v-else-if="!loading" description="暂无场景" />
+        <pagination
+          v-show="total > 0"
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </div>
     <el-dialog title="创建/编辑场景" :visible.sync="open">
       <el-form ref="createForm" :model="scene" :rules="rules" label-width="100px" label-position="right">
         <el-form-item label="场景名称：" prop="title">
@@ -168,9 +187,8 @@
 
 <script>
 import InputTableSelect from "@/components/InputTableSelect";
-import { queryObject, getObject, delObject, createObject, updateObject } from "@/api/iot/table";
+import { queryObject, delObject, createObject, updateObject } from "@/api/iot/table";
 import {validateCheck} from "@/assets/js/iot";
-import {toProject} from "@/api/iot/system";
 import IconSelect from "@/components/IconSelect/index.vue";
 
 export default {
@@ -192,8 +210,6 @@ export default {
       loading: true,
       // 选中数组
       ids: [],
-      // 非单个禁用
-      single: true,
       // 非多个禁用
       multiple: true,
       // 显示搜索条件
@@ -204,13 +220,15 @@ export default {
       tableList: [],
       scene: { },
       project: {},
-      projects : [],
+      projectList: [],
       sceneQuery: {},
       open: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
-        pageSize: 10
+        pageSize: 10,
+        title: '',
+        status: ''
       },
       // 表单参数
       form: {},
@@ -228,54 +246,77 @@ export default {
       }
     };
   },
+  computed: {
+    activeProjectKey() {
+      return this.project.id ? String(this.project.id) : '';
+    },
+    activeProjectTitle() {
+      return this.project.title || '项目';
+    }
+  },
   created() {
+    this.getProjects();
     this.getList();
   },
   methods: {
+    getProjects() {
+      const pageSize = 100;
+      const projects = [];
+      const projectIds = new Set();
+      const loadPage = pageNum => queryObject('project', { pageNum, pageSize }).then(response => {
+        const rows = Array.isArray(response.rows) ? response.rows : [];
+        const newProjects = rows.filter(item => {
+          const id = String(item.id);
+          if (projectIds.has(id)) {
+            return false;
+          }
+          projectIds.add(id);
+          return true;
+        });
+        projects.push(...newProjects);
+
+        const total = Number(response.total);
+        const hasLoadedAll = (total > 0 && projects.length >= total) || rows.length === 0 || newProjects.length === 0;
+        if (!hasLoadedAll) {
+          return loadPage(pageNum + 1);
+        }
+        this.projectList = projects;
+        if (!this.project.id && projects.length) {
+          this.project = projects[0];
+          this.queryParams.pageNum = 1;
+          this.getList();
+        }
+      });
+      loadPage(1).catch(() => {
+        this.$modal.msgError('项目列表加载失败');
+      });
+    },
     /** 查询列表 */
     getList() {
       this.loading = true;
+      this.ids = [];
+      this.multiple = true;
       const queryParams = {
         pageNum : this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         project: this.project.id,
         status: this.queryParams.status
-      }
+      };
       queryParams['title[like]'] = this.queryParams.title;
       this.sceneQuery = {
         project: this.project.id,
-        status: this.queryParams.status
+        status: this.queryParams.status,
+        'title[like]': this.queryParams.title
       };
       queryObject(this.table, queryParams).then(response => {
-        const rows = response.rows;
-        const total = response.total;
-        const ids = [];
-        rows.map(row => {
-          if(row.project && !ids.includes(row.project)){
-            ids.push(row.project);
-          }
-        });
-        if(ids.length > 0){
-          getObject('project', ids.join(',')).then(response => {
-            const projects = response.data;
-            if(Array.isArray(projects)){
-              this.projects = projects;
-            }else{
-              this.projects.push(projects)
-            }
-            this.tableList = rows;
-            this.total = total;
-            this.loading = false;
-          }).catch(err => {
-            this.tableList = rows;
-            this.total = total;
-            this.loading = false;
-          });
-        }else{
-          this.tableList = rows;
-          this.total = total;
-          this.loading = false;
-        }
+        this.tableList = response.rows || [];
+        this.total = response.total || 0;
+        this.loading = false;
+      }).catch(() => {
+        this.loading = false;
+        this.tableList = [];
+        this.total = 0;
+        this.$modal.msgError('场景列表加载失败');
       });
     },
     // 选择图标
@@ -292,12 +333,16 @@ export default {
       this.resetForm("queryForm");
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.sceneQuery = { ids : this.ids.join(',') }
-      this.single = selection.length!=1
-      this.multiple = !selection.length
+    toggleSceneSelection(sceneItem, checked) {
+      const selected = new Set(this.ids);
+      if (checked) {
+        selected.add(sceneItem.id);
+      } else {
+        selected.delete(sceneItem.id);
+      }
+      this.ids = Array.from(selected);
+      this.sceneQuery = { ids: this.ids.join(',') };
+      this.multiple = this.ids.length === 0;
     },
     goEditScene(row) {
       const project = this.$route.params.project
@@ -322,7 +367,6 @@ export default {
     },
     openDialog() {
       this.scene = { status : "0", viewType : [] };
-      this.project = {};
       this.open = true;
     },
     cancel() {
@@ -352,7 +396,7 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.id || this.ids;
+      const ids = row && row.id ? row.id : this.ids;
       const table = this.table;
       this.$modal.confirm('是否确认删除'+this.desc+'ID为"' + ids + '"的数据项？').then(function() {
         return delObject(table, ids);
@@ -364,41 +408,285 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       this.download('system/export/'+ this.table, {
-        ...this.queryParams
+        ...this.queryParams,
+        project: this.project.id,
       }, this.desc+`_${new Date().getTime()}.xlsx`)
-    },
-    formatRow(row, column) {
-      switch (column.property){
-        case 'project':
-          const project = this.projects.filter(item => {
-            return item.id === row.project
-          });
-          return project && project[0] ? project[0].title : '未关联';
-        default:
-          return row[column.property];
-      }
     },
     editProjectDone(project) {
       this.scene.project = project.id;
     },
-    selectProjectDone(project) {
-      if(project){
-        this.project = project;
-      }else{
-        this.project = {};
-      }
+    handleProjectSelect(projectId) {
+      this.project = this.projectList.find(item => String(item.id) === projectId) || {};
+      this.queryParams.pageNum = 1;
+      this.getList();
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-
-.el-dropdown-link {
-  font-size: 14px;
+.scene-layout {
+  display: flex;
+  min-height: 420px;
+  gap: 16px;
 }
-.el-dropdown-link:hover{
-  text-decoration: underline;
+
+.scene-project-menu {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  width: 248px;
+  flex: 0 0 248px;
+  padding: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(127, 127, 127, 0.14);
+  border-radius: 10px;
+
+  ::v-deep .el-menu {
+    min-height: 0;
+    flex: 1;
+    background: transparent;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 0;
+  }
+
+  ::v-deep .el-menu-item.scene-project-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    margin: 2px 0;
+    padding: 0 12px !important;
+    border-radius: 6px;
+    line-height: 44px;
+    font-size: 13px;
+    transition: background-color 0.18s ease, color 0.18s ease;
+
+    > i {
+      flex: 0 0 20px;
+      margin: 0;
+      color: #909399;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    > .el-menu-item__title {
+      overflow: hidden;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .scene-project-name {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &.scene-project-all {
+      margin-bottom: 8px;
+    }
+  }
+
+  ::v-deep .el-menu-item.scene-project-item:not(.is-active):hover {
+    background-color: rgba(127, 127, 127, 0.08);
+  }
+
+  ::v-deep .el-menu-item.scene-project-item.is-active > i {
+    color: currentColor;
+  }
+}
+
+.scene-project-menu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 6px 8px;
+  padding: 8px 8px 12px;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.14);
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.scene-project-count {
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(127, 127, 127, 0.12);
+  color: #909399;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: center;
+}
+
+.scene-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.scene-content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 50px;
+  margin: 0 0 14px;
+  padding: 0 2px 12px;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.14);
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+
+  span {
+    display: block;
+    margin-top: 3px;
+    color: #909399;
+    font-size: 12px;
+  }
+}
+
+.scene-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.scene-card {
+  min-width: 0;
+  border-radius: 7px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover {
+    border-color: #c6e2ff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  ::v-deep .el-card__body {
+    padding: 12px 14px;
+  }
+}
+
+.scene-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.scene-card-icon {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(0, 113, 227, 0.08);
+  color: var(--current-color, #0071e3);
+  font-size: 16px;
+}
+
+.scene-card-title {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scene-card-description {
+  overflow: hidden;
+  height: 18px;
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 18px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.scene-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(127, 127, 127, 0.12);
+}
+
+.scene-card-meta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 8px;
+  color: #909399;
+  font-size: 11px;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.scene-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+
+  ::v-deep .el-button {
+    margin: 0;
+    padding: 4px 2px;
+  }
+}
+
+@media (max-width: 600px) {
+  .scene-layout {
+    flex-direction: column;
+  }
+
+  .scene-project-menu {
+    display: block;
+    width: 100%;
+    flex-basis: auto;
+    overflow: hidden;
+    padding: 8px;
+
+    ::v-deep .el-menu {
+      display: flex;
+      min-height: auto;
+      overflow-y: hidden;
+      overflow-x: auto;
+    }
+
+    ::v-deep .el-menu-item {
+      width: auto;
+      flex: 0 0 auto;
+    }
+  }
+
+  .scene-content-header {
+    margin-top: 4px;
+  }
+
+  .scene-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-project-menu-title {
+    margin-bottom: 8px;
+    padding: 4px 8px 10px;
+  }
 }
 
 </style>

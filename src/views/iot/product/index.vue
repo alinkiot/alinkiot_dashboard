@@ -69,9 +69,14 @@
           <dict-tag :options="dict.type.iot_net_type" :value="scope.row.netType"/>
         </template>
       </el-table-column>
-      <el-table-column label="设备类型" align="center" prop="nodeType" width="100">
+      <el-table-column label="设备类型" align="center" prop="nodeType" width="120">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.iot_node_type" :value="scope.row.nodeType"/>
+          <dict-tag
+            :options="dict.type.iot_node_type"
+            :value="scope.row.nodeType"
+            show-label
+            :show-tooltip="false"
+          />
         </template>
       </el-table-column>
       <el-table-column label="禁用状态" align="center" prop="status" width="100">
@@ -261,5 +266,4 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 </style>

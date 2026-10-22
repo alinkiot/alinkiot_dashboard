@@ -12,16 +12,25 @@
         <el-input v-model="form.name" placeholder="请输入产品名称"/>
       </el-form-item>
       <el-form-item label="设备类型" prop="nodeType">
-        <el-radio-group v-model="form.nodeType">
+        <el-radio-group v-model="form.nodeType" class="node-type-options">
           <el-radio
             v-for="dict in dict.type.iot_node_type"
             :key="dict.value"
             :label="dict.value"
-          >{{ dict.label }}
+            class="node-type-card"
+          >
+            <span class="node-type-option">
+              <svg-icon
+                v-if="dict.raw && dict.raw.cssClass"
+                :icon-class="dict.raw.cssClass"
+                class="node-type-option__icon"
+              />
+              <span>{{ dict.label }}</span>
+            </span>
           </el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="产品分类" prop="category">
+      <el-form-item label="产品面板" prop="category">
         <el-select v-model="form.category" placeholder="请选择产品分类">
           <el-option
             v-for="dict in dict.type.iot_product_mgr"
@@ -30,7 +39,6 @@
             :value="dict.value"
           />
         </el-select>
-        <el-button style="margin-left:5px;" size="small" type="primary" icon="el-icon-plus" circle @click="addDict('iot_product_mgr')"></el-button>
       </el-form-item>
       <el-form-item label="协议标识" prop="protocol">
         <el-select v-model="form.protocol" placeholder="协议标识">
@@ -41,7 +49,6 @@
             :value="dict.value"
           />
         </el-select>
-        <el-button style="margin-left:5px;" size="small" type="primary" icon="el-icon-plus" circle @click="addDict('iot_protocol_id')"></el-button>
       </el-form-item>
       <el-form-item label="注册类型" prop="autoRegister">
         <el-select v-model="form.autoRegister" placeholder="是否自动注册">
@@ -62,7 +69,6 @@
             :value="dict.value"
           />
         </el-select>
-        <el-button style="margin-left:5px;" size="small" type="primary" icon="el-icon-plus" circle @click="addDict('iot_net_type')"></el-button>
       </el-form-item>
       <el-form-item label="产品图片" prop="img">
         <ImageUpload :limit=1 @input="handleFile" :value="form.img"/>
@@ -136,6 +142,22 @@ export default {
       }
     };
   },
+  watch: {
+    'dict.type.iot_auto_register': {
+      handler(options) {
+        if (!this.product && this.isEmptyAutoRegister() && options && options.length) {
+          this.form.autoRegister = options[0].value;
+        }
+      }
+    },
+    'dict.type.iot_product_mgr': {
+      handler(options) {
+        if (!this.product && this.isEmptyCategory() && options && options.length) {
+          this.form.category = options[0].value;
+        }
+      }
+    }
+  },
   created() {
     if(this.product){
       this.form = {
@@ -150,11 +172,34 @@ export default {
         status: this.product.status,
         img: this.product.img
       }
+    } else {
+      this.setDefaultAutoRegister();
+      this.setDefaultCategory();
     }
   },
   methods: {
+    isEmptyAutoRegister() {
+      return this.form.autoRegister === undefined || this.form.autoRegister === null || this.form.autoRegister === '';
+    },
+    setDefaultAutoRegister() {
+      const options = this.dict.type.iot_auto_register;
+      if (this.isEmptyAutoRegister() && options && options.length) {
+        this.form.autoRegister = options[0].value;
+      }
+    },
+    isEmptyCategory() {
+      return this.form.category === undefined || this.form.category === null || this.form.category === '';
+    },
+    setDefaultCategory() {
+      const options = this.dict.type.iot_product_mgr;
+      if (this.isEmptyCategory() && options && options.length) {
+        this.form.category = options[0].value;
+      }
+    },
     reset() {
       this.form = { status : '0', nodeType: 'device' };
+      this.setDefaultAutoRegister();
+      this.setDefaultCategory();
     },
     addDict(dictType) {
       // 新开标签页管理字典，避免离开当前抽屉导致正在编辑的表单内容丢失
@@ -201,6 +246,65 @@ export default {
 ::v-deep {
   .el-button--small.is-circle{
     padding : 4px;
+  }
+}
+
+.node-type-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 112px;
+  min-height: 72px;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.node-type-option__icon {
+  font-size: 24px;
+  vertical-align: middle;
+}
+
+.node-type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  ::v-deep .node-type-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    margin: 0;
+    padding: 0;
+
+    .el-radio__input {
+      display: none;
+    }
+
+    .el-radio__label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border: 1px solid rgba(127, 127, 127, 0.24);
+      border-radius: 8px;
+      color: inherit;
+      line-height: normal;
+      transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    &:hover .el-radio__label {
+      border-color: #409eff;
+    }
+
+    &.is-checked .el-radio__label {
+      border-color: #409eff;
+      background: rgba(64, 158, 255, 0.08);
+      box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.14);
+      color: #409eff;
+    }
   }
 }
 </style>

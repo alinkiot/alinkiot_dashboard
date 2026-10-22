@@ -1,10 +1,10 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="search-form">
-      <InputTableSelect showColumn="name" label="设备名称" table="device" @selectDone="selectDeviceDone" prop="device"/>
+      <InputTableSelect ref="deviceSelect" showColumn="name" label="设备名称" table="device" @selectDone="selectDeviceDone" prop="addr"/>
       <DateTimePicker :options="dict.type.echart_aggregate" @change="dateChange" prop="dateRange"/>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button type="primary" icon="el-icon-search" size="mini" :disabled="!queryParams.addr" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
@@ -35,7 +35,6 @@
 import { queryDeviceLog } from "@/api/iot/system";
 import InputTableSelect from "@/components/InputTableSelect";
 import DateTimePicker from "@/components/DateTimePicker";
-import dayjs from "dayjs";
 import {getDateRange} from "@/assets/js/iot";
 
 export default {
@@ -67,9 +66,6 @@ export default {
       }
     };
   },
-  created() {
-    this.getList();
-  },
   methods: {
     dateChange(mode, dateRange) {
       this.datetimeRange = {
@@ -79,6 +75,12 @@ export default {
     },
     /** 查询登录日志 */
     getList() {
+      if (!this.queryParams.addr) {
+        this.list = [];
+        this.total = 0;
+        this.loading = false;
+        return;
+      }
       const dateRange = getDateRange(this.datetimeRange);
       this.queryParams["time[begin]"] = dateRange[0];
       this.queryParams["time[end]"] = dateRange[1];
@@ -132,8 +134,12 @@ export default {
         dateRange: []
       };
       this.resetForm("queryForm");
+      this.queryParams.addr = undefined;
+      this.queryParams.pageNum = 1;
+      this.list = [];
+      this.total = 0;
+      this.$refs.deviceSelect.handleClean();
     }
   }
 };
 </script>
-
