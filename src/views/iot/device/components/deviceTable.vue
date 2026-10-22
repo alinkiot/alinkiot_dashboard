@@ -9,6 +9,7 @@
               <div class="device-card__header-left">
                 <el-checkbox v-if="selectionMode" @change="checked => handleCardSelectionChange(checked, device)" />
                 <span class="device-card__name">{{ device.name }}</span>
+                <el-tag type="danger" size="mini" v-if="isShow('status') && device.status==='1'">禁用</el-tag>
               </div>
               <div class="device-card__header-right">
                 <dict-tag class="device-card__net-type" :options="dict.type.iot_net_type" :value="device.product.netType" v-if="isShow('netType')"/>
@@ -25,24 +26,36 @@
               </div>
             </div>
             <div class="device-card__body">
-              <div class="device-card__image">
-                <ImagePreview :src="device.product.img" v-if="device.product && device.product.img" class="device-card__img"/>
-                <div class="device-card__img-placeholder" v-else>
-                  <i class="el-icon-cpu"></i>
+              <div class="device-card__image-column">
+                <div class="device-card__image">
+                  <ImagePreview :src="device.product.img" v-if="device.product && device.product.img" class="device-card__img"/>
+                  <div class="device-card__img-placeholder" v-else>
+                    <i class="el-icon-cpu"></i>
+                  </div>
                 </div>
+                <dict-tag
+                  class="device-card__node-type"
+                  :options="dict.type.iot_node_type"
+                  :value="device.product.nodeType"
+                  show-label
+                  :show-tooltip="false"
+                  v-if="isShow('nodeType')"
+                />
               </div>
               <div class="device-card__info">
-                <div class="device-card__tags">
-                  <dict-tag :options="dict.type.iot_node_type" :value="device.product.nodeType" v-if="isShow('nodeType')"/>
-                  <el-tag type="danger" size="mini" v-if="isShow('status') && device.status==='1'">禁用</el-tag>
-                </div>
                 <div class="device-card__meta">
                   <div class="device-card__meta-item" v-if="isShow('subAddr')">
                     <i class="el-icon-link"></i>
                     <span>{{ device.subAddr }}</span>
                   </div>
                   <div class="device-card__meta-item">
-                    <i class="el-icon-position"></i>
+                    <dict-tag
+                      class="device-card__address-node-type"
+                      :options="dict.type.iot_node_type"
+                      :value="device.product.nodeType"
+                      :show-tooltip="false"
+                      v-if="isShow('nodeType')"
+                    />
                     <span>{{ device.addr }}</span>
                   </div>
                   <div class="device-card__meta-item" v-if="isShow('project')">
@@ -420,6 +433,8 @@ export default {
 }
 
 .device-card__name {
+  flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   color: #303133;
@@ -497,6 +512,14 @@ export default {
   justify-content: center;
 }
 
+.device-card__image-column {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .device-card__img {
   width: 100%;
   height: 100%;
@@ -518,12 +541,77 @@ export default {
   min-width: 0;
 }
 
-.device-card__tags {
-  display: flex;
-  flex-wrap: nowrap;
+.device-card__node-type {
+  display: inline-flex !important;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
+  overflow: visible !important;
+  line-height: 1;
+
+  ::v-deep .dict-tag-icon-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  ::v-deep .dict-tag-label {
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+  }
+
+  ::v-deep .el-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+  }
+
+  ::v-deep .tag-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  ::v-deep .svg-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.device-card__address-node-type {
+  display: inline-flex !important;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  overflow: visible !important;
+  line-height: 1;
+
+  ::v-deep .el-button {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+  }
+
+  ::v-deep .tag-icon {
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  ::v-deep .svg-icon {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .device-card__meta {

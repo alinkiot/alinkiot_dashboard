@@ -19,13 +19,13 @@ const TABLE_BG = {
   'theme-dark-blue': '#0C1535',
   'theme-green':     '#121e15'
 }
-// 亮色主题表头用稍深一点的背景，与 Element UI 默认保持一致
+// 表头使用独立的表面色，与表格主体拉开层次，同时沿用各主题的输入框底色。
 const TABLE_HEADER_BG = {
   'theme-light':     '#f5f7fa',
   'theme-blue':      '#f5f7fa',
-  'theme-dark':      '#1d1d1f',
-  'theme-dark-blue': '#0C1535',
-  'theme-green':     '#121e15'
+  'theme-dark':      '#2a2a2d',
+  'theme-dark-blue': '#1E2D68',
+  'theme-green':     '#223026'
 }
 
 function buildTableStyle(theme) {

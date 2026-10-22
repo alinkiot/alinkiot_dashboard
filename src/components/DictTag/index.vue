@@ -3,12 +3,15 @@
     <template v-for="(item, index) in options">
       <template v-if="values.includes(item.value)">
         <template v-if="item.raw.cssClass">
-          <el-tooltip class="item" effect="dark" :content="tooltip ? tooltip : item.label" placement="top">
-            <el-button type="text">
-              <span :class="'tag-icon tag-icon-'+item.raw.listClass">
-                <svg-icon slot="prefix" :icon-class="item.raw.cssClass"/>
-              </span>
-            </el-button>
+          <el-tooltip class="item" effect="dark" :content="tooltip ? tooltip : item.label" placement="top" :disabled="!showTooltip">
+            <span class="dict-tag-icon-label">
+              <el-button type="text">
+                <span :class="'tag-icon tag-icon-'+item.raw.listClass">
+                  <svg-icon slot="prefix" :icon-class="item.raw.cssClass"/>
+                </span>
+              </el-button>
+              <span v-if="showLabel" class="dict-tag-label">{{ item.label }}</span>
+            </span>
           </el-tooltip>
         </template>
         <template v-else>
@@ -47,6 +50,14 @@ export default {
     tooltip: {
       type: String,
       default: null
+    },
+    showLabel: {
+      type: Boolean,
+      default: false
+    },
+    showTooltip: {
+      type: Boolean,
+      default: true
     }
   },
   computed: {

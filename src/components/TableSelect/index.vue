@@ -5,6 +5,7 @@
         <el-input v-model="item.value" placeholder="回车搜索" class="table-select__input" clearable @keyup.enter.native="handleQuery" />
       </el-form-item>
       <el-form-item>
+        <el-button icon="el-icon-search" type="primary" size="small" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="small" @click="handleReset" title="重置">重置</el-button>
       </el-form-item>
     </el-form>
@@ -12,7 +13,6 @@
         v-loading="loading"
         :data="tableList"
         :row-key="getRowKeys"
-        border
         stripe
         size="small"
         max-height="360"

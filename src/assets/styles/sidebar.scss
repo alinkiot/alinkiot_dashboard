@@ -212,31 +212,66 @@
 }
 
 // === Dark theme sidebar hover overrides ===
+.theme-light {
+  #app .sidebar-container .el-menu--inline,
+  #app .sidebar-container .el-menu--inline .el-menu-item,
+  #app .sidebar-container .el-menu--inline .el-submenu__title {
+    background-color: var(--submenu-background) !important;
+  }
+
+  #app .sidebar-container .el-menu-item:hover,
+  #app .sidebar-container .el-submenu__title:hover,
+  .el-menu--vertical .el-menu-item:hover,
+  .el-menu--vertical .el-submenu__title:hover {
+    background-color: rgba(0, 113, 227, 0.08) !important;
+  }
+
+  .el-menu--vertical .el-menu--popup {
+    background-color: #f1f1f5 !important;
+  }
+}
+
 .theme-dark,
 .theme-dark-blue,
 .theme-blue,
 .theme-green {
-  #app .sidebar-container {
+  #app .sidebar-container .el-menu--inline,
+  #app .sidebar-container .el-menu--inline .el-menu-item,
+  #app .sidebar-container .el-menu--inline .el-submenu__title {
+    background-color: var(--submenu-background) !important;
+  }
+
+  #app .sidebar-container,
+  #app .el-menu--vertical,
+  .el-menu--vertical {
     .submenu-title-noDropdown,
     .el-submenu__title {
       &:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
     }
-    & .nest-menu .el-submenu>.el-submenu__title,
-    & .el-submenu .el-menu-item {
+    .nest-menu .el-submenu > .el-submenu__title,
+    .el-submenu .el-menu-item {
       &:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
     }
-  }
-  .el-menu--vertical {
-    .nest-menu .el-submenu>.el-submenu__title,
     .el-menu-item {
       &:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
     }
+  }
+}
+
+// Keep the selected route distinct from the hover state in dark sidebars.
+.theme-dark,
+.theme-dark-blue,
+.theme-blue,
+.theme-green {
+  #app .sidebar-container .el-menu-item.is-active,
+  .el-menu--vertical .el-menu-item.is-active {
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
 }
 
@@ -263,5 +298,42 @@
         background-color: rgba(66, 103, 196, 0.28) !important;
       }
     }
+  }
+
+  .el-menu--vertical .el-menu--popup {
+    background-color: #091027 !important;
+  }
+
+  #app .sidebar-container .el-menu-item.is-active,
+  .el-menu--vertical .el-menu-item.is-active {
+    background-color: rgba(66, 103, 196, 0.32) !important;
+  }
+}
+
+.theme-dark {
+  .el-menu--vertical .el-menu--popup {
+    background-color: #111113 !important;
+  }
+}
+
+.theme-blue {
+  .el-menu--vertical .el-menu--popup {
+    background-color: #061733 !important;
+  }
+
+  #app .sidebar-container .el-menu-item.is-active,
+  .el-menu--vertical .el-menu-item.is-active {
+    background-color: rgba(64, 158, 255, 0.28) !important;
+  }
+}
+
+.theme-green {
+  .el-menu--vertical .el-menu--popup {
+    background-color: #0d170f !important;
+  }
+
+  #app .sidebar-container .el-menu-item.is-active,
+  .el-menu--vertical .el-menu-item.is-active {
+    background-color: rgba(52, 199, 89, 0.24) !important;
   }
 }

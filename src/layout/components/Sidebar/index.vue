@@ -1,7 +1,11 @@
 <template>
     <div :class="{'has-logo':showLogo}" :style="{ backgroundColor: getStyle('menuBackground') }">
         <logo v-if="showLogo" :collapse="isCollapse" />
-        <el-scrollbar :class="settings.sideTheme" wrap-class="scrollbar-wrapper">
+        <el-scrollbar
+            :class="settings.sideTheme"
+            :style="{ '--submenu-background': getStyle('subMenuBackground') }"
+            wrap-class="scrollbar-wrapper"
+        >
             <el-menu
                 :default-active="activeMenu"
                 :collapse="isCollapse"

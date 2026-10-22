@@ -15,12 +15,14 @@ $base-menu-color:rgba(0,0,0,.55);
 $base-menu-background:#fbfbfd;
 $base-logo-title-color: #1d1d1f;
 $base-sub-menu-hover: rgba(0,0,0,0.04);
+$base-sub-menu-background: #f1f1f5;
 
 // Dark (暗色)
 $dark-menu-color:rgba(255,255,255,0.85);
 $dark-menu-background: #1d1d1f;
 $dark-logo-title-color: #f5f5f7;
 $dark-sub-menu-hover: rgba(255,255,255,0.06);
+$dark-sub-menu-background: #111113;
 
 
 // Dark Blue (午夜蓝)
@@ -28,18 +30,21 @@ $dark-blue-menu-color:rgba(255,255,255,0.85);
 $dark-blue-menu-background:#111D42;
 $dark-blue-logo-title-color: #f5f5f7;
 $dark-blue-sub-menu-hover: rgba(66, 103, 196, 0.25);
+$dark-blue-sub-menu-background: #091027;
 
 // Blue (科技蓝/企业蓝)
 $blue-menu-color:rgba(255,255,255,0.85);
 $blue-menu-background: #0a2a5e;
 $blue-logo-title-color: #f5f5f7;
 $blue-sub-menu-hover: rgba(64,158,255,0.22);
+$blue-sub-menu-background: #061733;
 
 // Green (森林绿)
 $green-menu-color:rgba(255,255,255,0.85);
 $green-menu-background: #1a2a1e;
 $green-logo-title-color: #f5f5f7;
 $green-sub-menu-hover: rgba(52,199,89,0.2);
+$green-sub-menu-background: #0d170f;
 
 
 
@@ -52,25 +57,30 @@ $green-sub-menu-hover: rgba(52,199,89,0.2);
   menuBackground: $base-menu-background;
   logoTitleColor: $base-logo-title-color;
   subMenuHover: $base-sub-menu-hover;
+  subMenuBackground: $base-sub-menu-background;
 
   theme-dark-menuColor: $dark-menu-color;
   theme-dark-menuBackground: $dark-menu-background;
   theme-dark-subMenuHover: $dark-sub-menu-hover;
+  theme-dark-subMenuBackground: $dark-sub-menu-background;
   theme-dark-logoTitleColor: $dark-logo-title-color;
 
   theme-dark-blue-menuColor: $dark-blue-menu-color;
   theme-dark-blue-menuBackground: $dark-blue-menu-background;
   theme-dark-blue-subMenuHover: $dark-blue-sub-menu-hover;
+  theme-dark-blue-subMenuBackground: $dark-blue-sub-menu-background;
   theme-dark-blue-logoTitleColor: $dark-blue-logo-title-color;
 
   theme-blue-menuColor: $blue-menu-color;
   theme-blue-menuBackground: $blue-menu-background;
   theme-blue-subMenuHover: $blue-sub-menu-hover;
+  theme-blue-subMenuBackground: $blue-sub-menu-background;
   theme-blue-logoTitleColor: $blue-logo-title-color;
 
   theme-green-menuColor: $green-menu-color;
   theme-green-menuBackground: $green-menu-background;
   theme-green-subMenuHover: $green-sub-menu-hover;
+  theme-green-subMenuBackground: $green-sub-menu-background;
   theme-green-logoTitleColor: $green-logo-title-color;
 
 }
