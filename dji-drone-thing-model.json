@@ -1,0 +1,112 @@
+[
+  {
+    "name": "altitude",
+    "title": "飞行高度",
+    "type": "float",
+    "unit": "m",
+    "precision": 2,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "horizontal_speed",
+    "title": "水平速度",
+    "type": "float",
+    "unit": "m/s",
+    "precision": 2,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "battery_percent",
+    "title": "电池电量",
+    "type": "integer",
+    "unit": "%",
+    "precision": 0,
+    "min": 0,
+    "max": 100,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "satellite_count",
+    "title": "卫星数量",
+    "type": "integer",
+    "unit": "",
+    "precision": 0,
+    "min": 0,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "heading",
+    "title": "航向角",
+    "type": "float",
+    "unit": "°",
+    "precision": 1,
+    "min": 0,
+    "max": 360,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "vertical_speed",
+    "title": "垂直速度",
+    "type": "float",
+    "unit": "m/s",
+    "precision": 2,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "signal",
+    "title": "链路信号",
+    "type": "integer",
+    "unit": "%",
+    "precision": 0,
+    "min": 0,
+    "max": 100,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "longitude",
+    "title": "经度",
+    "type": "float",
+    "unit": "°",
+    "precision": 6,
+    "min": -180,
+    "max": 180,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  },
+  {
+    "name": "latitude",
+    "title": "纬度",
+    "type": "float",
+    "unit": "°",
+    "precision": 6,
+    "min": -90,
+    "max": 90,
+    "access": "read",
+    "rate": 1,
+    "offset": 0,
+    "freq": 5
+  }
+]

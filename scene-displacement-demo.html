@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>拉线位移监测</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #e8f0fa; background: #091321; font: 14px/1.5 Arial, "Microsoft YaHei", sans-serif; }
+    main { max-width: 1320px; margin: auto; padding: 26px; }
+    header, .heading, .device-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .actions { display: flex; gap: 8px; }
+    .eyebrow { margin: 0 0 6px; color: #54c9d4; font-size: 11px; letter-spacing: 2px; }
+    h1 { margin: 0; font-size: 28px; }
+    h2 { margin: 0; font-size: 16px; }
+    .muted { color: #8ca0b7; font-size: 12px; }
+    button { padding: 9px 13px; color: #dceaf8; background: #10243a; border: 1px solid #29445e; border-radius: 8px; cursor: pointer; }
+    button:hover { border-color: #4fcbd4; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0 30px; }
+    .metric, .card, .history { padding: 16px; border: 1px solid #20354c; border-radius: 12px; background: linear-gradient(145deg, #11243a, #0c1b2d); }
+    .metric-label { color: #8ca0b7; font-size: 12px; }
+    .metric-value { margin-top: 8px; font-size: 26px; font-weight: 700; }
+    .unit { padding-left: 5px; color: #8ca0b7; font-size: 12px; font-weight: 400; }
+    .heading { margin-bottom: 12px; }
+    .devices { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .card { cursor: pointer; transition: .18s; }
+    .card:hover, .card.selected { border-color: #42bdcc; }
+    .device-head { align-items: flex-start; }
+    .device-name { overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .address, .time { margin-top: 4px; color: #8297ae; font-size: 11px; }
+    .status { flex: none; color: #9daebe; font-size: 11px; }
+    .status.online { color: #51d5a5; }
+    .reading { margin-top: 20px; font-size: 30px; font-weight: 700; }
+    .history { margin-top: 22px; }
+    svg { display: block; width: 100%; height: 230px; }
+    .grid { stroke: #263b50; stroke-width: 1; }
+    .line { fill: none; stroke: #4ad1d4; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .axis { fill: #8196ac; font-size: 11px; }
+    .message { padding: 32px; color: #8ca0b7; text-align: center; }
+    .error { color: #ff9c91; }
+    html:fullscreen { overflow: auto; background: #091321; }
+    html:fullscreen main { max-width: none; min-height: 100vh; padding: 32px clamp(24px, 4vw, 64px); }
+    @media (max-width: 600px) { main { padding: 18px 14px; } h1 { font-size: 22px; } .metrics { gap: 7px; } .metric { padding: 12px 9px; } .metric-value { font-size: 20px; } .devices { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">DISPLACEMENT MONITORING</p>
+        <h1>拉线位移监测</h1>
+        <div class="muted">场景设备状态与位移变化趋势</div>
+      </div>
+      <div class="actions">
+        <button id="fullscreen" type="button">⛶ 全屏</button>
+        <button id="refresh" type="button">↻ 刷新</button>
+      </div>
+    </header>
+    <section class="metrics">
+      <div class="metric"><div class="metric-label">监测设备</div><div class="metric-value" id="count">—<span class="unit">台</span></div></div>
+      <div class="metric"><div class="metric-label">在线设备</div><div class="metric-value" id="online">—<span class="unit">台</span></div></div>
+      <div class="metric"><div class="metric-label">当前位移读数</div><div class="metric-value" id="current">—</div></div>
+    </section>
+    <section>
+      <div class="heading"><h2>设备监测</h2><span class="muted">选择设备查看近 7 天趋势</span></div>
+      <div class="devices" id="devices"><div class="message">正在读取场景设备…</div></div>
+    </section>
+    <section class="history">
+      <div class="heading"><h2 id="historyTitle">位移趋势</h2><span class="muted" id="updated"></span></div>
+      <div class="muted" id="historyInfo">选择设备后加载历史数据</div>
+      <div class="muted" id="productInfo"></div>
+      <div id="chart"><div class="message">等待选择设备</div></div>
+    </section>
+  </main>
+  <script src="/scene-sdk.js?v=1.1.0"></script>
+  <script>
+    (function () {
+      "use strict";
+      var devices = [], selectedId = null, liveUnsubscribe = null, liveToken = 0;
+      var $ = function (id) { return document.getElementById(id); };
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function online(device) {
+        var status = device.onlineStatus || {};
+        return Number(status.online !== undefined ? status.online : device.online) === 1;
+      }
+      function reading(data, preferred) {
+        if (!data || typeof data !== "object") return null;
+        var keys = Object.keys(data).filter(function (key) {
+          return !/^(id|addr|createtime|createTime|ts|alarmrule|levels|device|online|scene|route)$/i.test(key);
+        });
+        var selected = keys.find(function (key) { return key === preferred; });
+        var key = selected || keys.find(function (name) { return /位移|拉线|拉绳|displacement|distance|position|stroke/i.test(name); }) || keys[0];
+        if (!key) return null;
+        var item = data[key], value = item && typeof item === "object" && "value" in item ? item.value : item;
+        return value !== "" && value != null && isFinite(Number(value))
+          ? { key: key, value: Number(value), unit: item && typeof item === "object" ? item.unit || "" : "" }
+          : null;
+      }
+      function formatTime(value) {
+        if (!value) return "时间未知";
+        var date = new Date(value);
+        return isNaN(date.getTime()) ? String(value) : date.toLocaleString("zh-CN");
+      }
+      function renderDevices() {
+        var selected = devices.find(function (device) { return String(device.id) === String(selectedId); });
+        var current = selected && reading(selected.latestData);
+        $("count").innerHTML = devices.length + '<span class="unit">台</span>';
+        $("online").innerHTML = devices.filter(online).length + '<span class="unit">台</span>';
+        $("current").innerHTML = current ? esc(current.value) + '<span class="unit">' + esc(current.unit) + "</span>" : "—";
+        if (!devices.length) {
+          $("devices").innerHTML = '<div class="message">当前场景还没有关联设备</div>';
+          return;
+        }
+        $("devices").innerHTML = devices.map(function (device) {
+          var value = reading(device.latestData), latest = device.latestData || {};
+          return '<article class="card ' + (String(device.id) === String(selectedId) ? "selected" : "") + '" data-id="' + esc(device.id) + '">' +
+            '<div class="device-head"><div style="min-width:0"><div class="device-name">' + esc(device.name || ("设备 " + device.id)) + '</div>' +
+            '<div class="address">' + esc(device.addr || "无设备地址") + '</div></div><span class="status ' + (online(device) ? "online" : "") + '">' +
+            (online(device) ? "● 在线" : "● 离线") + "</span></div>" +
+            '<div class="reading">' + (value ? esc(value.value) + '<span class="unit">' + esc(value.unit) + "</span>" : "—") + "</div>" +
+            '<div class="muted">' + esc(value ? value.key : "暂无位移数据") + '</div>' +
+            '<div class="time">最近采集 · ' + esc(formatTime(latest.createtime || latest.createTime)) + "</div></article>";
+        }).join("");
+        Array.prototype.forEach.call(document.querySelectorAll(".card"), function (card) {
+          card.addEventListener("click", function () {
+            selectedId = card.getAttribute("data-id");
+            renderDevices();
+            loadHistory();
+            watchDevice(devices.find(function (item) { return String(item.id) === String(selectedId); }));
+          });
+        });
+      }
+      function renderHistory(rows) {
+        var device = devices.find(function (item) { return String(item.id) === String(selectedId); });
+        var current = device && reading(device.latestData);
+        var points = (rows || []).map(function (row) {
+          var value = reading(row, current && current.key);
+          return value ? { value: value.value, time: row.createtime || row.createTime } : null;
+        }).filter(Boolean).reverse();
+        if (!points.length) {
+          $("chart").innerHTML = '<div class="message">该设备暂无可绘制的位移历史数据</div>';
+          return;
+        }
+        var w = 900, h = 230, left = 55, right = 15, top = 15, bottom = 32;
+        var values = points.map(function (point) { return point.value; });
+        var min = Math.min.apply(Math, values), max = Math.max.apply(Math, values);
+        if (min === max) { min -= 1; max += 1; }
+        var innerW = w - left - right, innerH = h - top - bottom;
+        var coords = points.map(function (point, index) {
+          return { x: left + (points.length === 1 ? innerW / 2 : index * innerW / (points.length - 1)), y: top + (max - point.value) * innerH / (max - min), time: point.time };
+        });
+        var path = coords.map(function (point, index) { return (index ? "L" : "M") + point.x.toFixed(1) + "," + point.y.toFixed(1); }).join(" ");
+        var grid = [0, 1, 2, 3].map(function (index) {
+          var y = top + index * innerH / 3, value = max - index * (max - min) / 3;
+          return '<line class="grid" x1="' + left + '" y1="' + y + '" x2="' + (w - right) + '" y2="' + y + '"></line>' +
+            '<text class="axis" x="0" y="' + (y + 4) + '">' + esc(value.toFixed(2)) + "</text>";
+        }).join("");
+        var labels = [coords[0], coords[Math.floor((coords.length - 1) / 2)], coords[coords.length - 1]].map(function (point) {
+          return '<text class="axis" text-anchor="middle" x="' + point.x + '" y="' + (h - 7) + '">' + esc(formatTime(point.time)) + "</text>";
+        }).join("");
+        $("chart").innerHTML = '<svg viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="位移历史曲线">' + grid +
+          '<path class="line" d="' + path + '"></path>' + labels + "</svg>";
+      }
+      function dateTime(date) {
+        var pad = function (value) { return String(value).padStart(2, "0"); };
+        return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()) +
+          " " + pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+      }
+      function loadHistory() {
+        if (!selectedId) return;
+        var device = devices.find(function (item) { return String(item.id) === String(selectedId); });
+        $("historyTitle").textContent = (device && device.name ? device.name : "设备") + " · 位移趋势";
+        $("historyInfo").textContent = "正在加载近 7 天历史数据…";
+        var end = new Date(), begin = new Date(end.getTime() - 7 * 86400000);
+        window.SceneSDK.getDeviceHistory(selectedId, {
+          begin: dateTime(begin), end: dateTime(end), pageNum: 1, pageSize: 100
+        }).then(function (result) {
+          $("historyInfo").textContent = "近 7 天 · " + ((result && result.total) || 0) + " 条记录";
+          renderHistory(result && result.rows);
+        }).catch(function (error) {
+          $("historyInfo").textContent = "历史数据读取失败";
+          $("chart").innerHTML = '<div class="message error">' + esc(error.message || "请稍后重试") + "</div>";
+        });
+      }
+      function watchDevice(device) {
+        var token = ++liveToken;
+        if (liveUnsubscribe) {
+          liveUnsubscribe();
+          liveUnsubscribe = null;
+        }
+        $("productInfo").textContent = "";
+        if (!device) return;
+        window.SceneSDK.getDeviceProduct(device.id).then(function (result) {
+          if (token !== liveToken || !result || !result.product) return;
+          var product = result.product;
+          $("productInfo").textContent = "产品 · " + (product.name || product.title || "未命名") +
+            " · 物模型 " + ((product.thing && product.thing.length) || 0) + " 项";
+        }).catch(function (error) {
+          if (token === liveToken) $("productInfo").textContent = "产品信息读取失败：" + (error.message || "请稍后重试");
+        });
+        window.SceneSDK.getDeviceLatestRecord(device.id).then(function (record) {
+          if (token !== liveToken || !record) return;
+          device.latestData = record;
+          renderDevices();
+        }).catch(function (error) {
+          if (token === liveToken) $("productInfo").textContent += " · 最新记录读取失败：" + (error.message || "请稍后重试");
+        });
+        window.SceneSDK.subscribeDeviceStatus(device.id, function (data) {
+          if (token !== liveToken) return;
+          device.latestData = data;
+          device.onlineStatus = { online: 1 };
+          renderDevices();
+          $("updated").textContent = "实时更新于 " + new Date().toLocaleTimeString("zh-CN");
+        }).then(function (unsubscribe) {
+          if (token === liveToken) liveUnsubscribe = unsubscribe;
+          else unsubscribe();
+        }).catch(function (error) {
+          if (token === liveToken) $("productInfo").textContent += " · 实时订阅失败：" + (error.message || "请稍后重试");
+        });
+      }
+      function loadDevices() {
+        $("devices").innerHTML = '<div class="message">正在读取场景设备…</div>';
+        if (!window.SceneSDK) {
+          $("devices").innerHTML = '<div class="message error">SDK 未加载，请检查 HTML 是否引入 /scene-sdk.js</div>';
+          return;
+        }
+        if (typeof window.SceneSDK.getDeviceProduct !== "function") {
+          $("devices").innerHTML = '<div class="message error">SDK 版本过旧，请引入 Dashboard 地址下的 /scene-sdk.js?v=1.1.0，并刷新页面</div>';
+          return;
+        }
+        window.SceneSDK.getDevices({ pageNum: 1, pageSize: 100 }).then(function (result) {
+          devices = result && Array.isArray(result.rows) ? result.rows : [];
+          if (!devices.some(function (device) { return String(device.id) === String(selectedId); })) selectedId = devices.length ? devices[0].id : null;
+          renderDevices();
+          $("updated").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN");
+          if (selectedId) loadHistory();
+          if (selectedId) watchDevice(devices.find(function (item) { return String(item.id) === String(selectedId); }));
+          else {
+            $("historyInfo").textContent = "当前场景暂无设备";
+            $("chart").innerHTML = '<div class="message">关联设备后即可查看历史趋势</div>';
+          }
+        }).catch(function (error) {
+          $("devices").innerHTML = '<div class="message error">' + esc(error.message || "读取设备失败") + "</div>";
+        });
+      }
+      $("fullscreen").addEventListener("click", function () {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(function () { $("historyInfo").textContent = "按 Esc 键退出全屏"; });
+        } else if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(function () {
+            $("historyInfo").textContent = "全屏失败：请确认父页面已允许 iframe 全屏";
+          });
+        } else {
+          $("historyInfo").textContent = "当前浏览器不支持 iframe 全屏";
+        }
+      });
+      document.addEventListener("fullscreenchange", function () {
+        $("fullscreen").textContent = document.fullscreenElement ? "⛶ 退出全屏" : "⛶ 全屏";
+      });
+      $("refresh").addEventListener("click", loadDevices);
+      loadDevices();
+    })();
+  </script>
+</body>
+</html>

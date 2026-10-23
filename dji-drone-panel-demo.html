@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>无人机遥测面板 · Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #e7edf4; background: #0c1016; }
+    body { margin: 0; }
+    button { font: inherit; color: inherit; cursor: pointer; background: #1c2633; border: 1px solid #354357; border-radius: 7px; padding: 9px 14px; }
+    button:hover { border-color: #72b5f6; }
+    button:disabled { opacity: .5; cursor: wait; }
+    main { max-width: 1600px; margin: auto; padding: 24px; }
+    header, .brand, .actions, .section-head, .footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    header { padding-bottom: 22px; }
+    .brand { justify-content: flex-start; }
+    .brand-mark { font-size: 26px; font-weight: 900; font-style: italic; letter-spacing: -2px; border-right: 1px solid #35404e; padding-right: 18px; }
+    h1 { font-size: 19px; margin: 0 0 5px; font-weight: 600; }
+    .sub, .muted { font-size: 12px; color: #8898ac; }
+    .tag { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #35404e; border-radius: 20px; padding: 7px 11px; font-size: 12px; white-space: nowrap; color: #a0afbf; }
+    .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .tag.online { color: #62d7b3; border-color: #2a574e; }
+    .notice { padding: 11px 14px; background: #141e2c; color: #9dbbdf; border: 1px solid #293d56; border-radius: 8px; font-size: 12px; line-height: 1.7; margin-bottom: 18px; }
+    .notice.error { color: #ffc0a7; border-color: #704936; background: #2c201b; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr); gap: 16px; }
+    .panel { border: 1px solid #27313e; background: #121922; border-radius: 12px; overflow: hidden; }
+    .section-head { padding: 16px 18px; border-bottom: 1px solid #27313e; }
+    h2 { margin: 0; font-size: 13px; font-weight: 600; }
+    .canvas { position: relative; min-height: 370px; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #213347 0%, #101924 65%); }
+    .canvas::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(#7298c10a 1px, transparent 1px), linear-gradient(90deg, #7298c10a 1px, transparent 1px); background-size: 32px 32px; }
+    .drone { width: min(100%, 500px); height: 310px; position: relative; }
+    .hud { position: absolute; font: 11px/1.8 monospace; color: #7c96b2; z-index: 1; }
+    .hud.top { top: 19px; left: 20px; }
+    .hud.bottom { bottom: 17px; right: 20px; text-align: right; }
+    .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #27313e; }
+    .hero-stat { padding: 18px; }
+    .hero-stat + .hero-stat { border-left: 1px solid #27313e; }
+    .label { color: #8c9cb0; font-size: 12px; }
+    .value { font: 600 29px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+    .unit { color: #8394aa; font-size: 12px; margin-left: 6px; }
+    .telemetry { display: grid; grid-template-columns: 1fr 1fr; padding: 3px 18px; }
+    .reading { min-width: 0; padding: 18px 0; border-bottom: 1px solid #26313f; }
+    .reading:nth-child(odd) { padding-right: 12px; }
+    .reading .value { font-size: 22px; }
+    .explanation { padding: 17px 18px; font-size: 12px; line-height: 1.8; color: #8394aa; }
+    .all-fields { margin-top: 16px; }
+    .fields { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .field { min-width: 0; padding: 16px; border: 1px solid #293544; border-radius: 8px; background: #151f2c; }
+    .field .value { font-size: 23px; margin: 9px 0 4px; color: #c9e2ff; }
+    .field-key { font-size: 11px; font-family: monospace; color: #617791; overflow-wrap: anywhere; }
+    .empty { grid-column: 1 / -1; padding: 28px; text-align: center; color: #8294aa; font-size: 13px; }
+    .footer { padding-top: 17px; color: #63768c; font-size: 11px; line-height: 1.7; }
+    @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 540px) { main { padding: 14px; } header { align-items: flex-start; flex-wrap: wrap; } .brand-mark { font-size: 22px; } h1 { font-size: 16px; } .canvas { min-height: 310px; } .hero-stat { padding: 12px; } .value { font-size: 23px; } .footer { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <div class="brand-mark">DJI<span style="font-size:10px;letter-spacing:0;font-style:normal"> STYLE</span></div>
+        <div><h1 id="deviceName">无人机遥测面板</h1><div class="sub" id="deviceMeta">FLIGHT TELEMETRY / 等待设备信息</div></div>
+      </div>
+      <div class="actions"><span class="tag" id="online">状态未知</span><button id="refresh">刷新数据</button><button id="fullscreen">全屏</button></div>
+    </header>
+    <div class="notice" id="notice" role="status" aria-live="polite">正在初始化 SDK，读取当前设备与产品物模型…</div>
+    <div class="layout">
+      <section class="panel">
+        <div class="section-head"><h2>飞行器概览</h2><span class="muted">AIRCRAFT OVERVIEW</span></div>
+        <div class="canvas">
+          <div class="hud top">TELEMETRY VIEW<br><span id="aircraftLabel">NO AIRCRAFT SELECTED</span></div>
+          <svg class="drone" viewBox="0 0 500 310" role="img" aria-label="四旋翼无人机静态示意图，非实际飞行姿态">
+            <defs><linearGradient id="body" x2="1" y2="1"><stop stop-color="#b6c6d5"/><stop offset="1" stop-color="#465b71"/></linearGradient></defs>
+            <g fill="none" stroke="#507397" opacity=".35">
+              <ellipse cx="250" cy="155" rx="196" ry="125" stroke-dasharray="3 8"/>
+              <ellipse cx="250" cy="155" rx="140" ry="90"/>
+              <path d="M30 155h440M250 15v280"/>
+            </g>
+            <g stroke="#60778d" stroke-width="22" stroke-linecap="round"><path d="M229 139 145 89M271 139 355 89M228 174 145 228M272 174 355 228"/></g>
+            <g fill="#172330" stroke="#839cb3" stroke-width="2">
+              <ellipse cx="135" cy="84" rx="63" ry="26"/><ellipse cx="365" cy="84" rx="63" ry="26"/>
+              <ellipse cx="135" cy="231" rx="63" ry="26"/><ellipse cx="365" cy="231" rx="63" ry="26"/>
+            </g>
+            <g fill="#8fa9c1"><path d="m80 80 110 8-1 5-110-8zM310 80l110 8-1 5-110-8zM80 227l110 8-1 5-110-8zM310 227l110 8-1 5-110-8z"/></g>
+            <g fill="#c0d4e4"><circle cx="135" cy="84" r="7"/><circle cx="365" cy="84" r="7"/><circle cx="135" cy="231" r="7"/><circle cx="365" cy="231" r="7"/></g>
+            <path d="m229 107 42 0 19 41-8 45-32 21-32-21-8-45z" fill="url(#body)" stroke="#b9cfe2"/>
+            <path d="M238 119h24v44h-24z" fill="#344a60"/><path d="m242 127 8-6 8 6" fill="none" stroke="#a2dbff" stroke-width="2"/>
+            <rect x="236" y="195" width="28" height="23" rx="8" fill="#344a60" stroke="#829aaf"/><circle cx="250" cy="207" r="7" fill="#0c151e" stroke="#73afd5"/>
+            <g fill="#74d8c1"><circle cx="164" cy="99" r="3"/><circle cx="336" cy="99" r="3"/></g>
+          </svg>
+          <div class="hud bottom">静态机体示意 · 非实时航姿<br>NO MAP / NO VIDEO FEED</div>
+        </div>
+        <div class="hero-stats" id="hero"></div>
+      </section>
+      <section class="panel">
+        <div class="section-head"><h2>飞行遥测</h2><span class="muted">LIVE DATA</span></div>
+        <div class="telemetry" id="telemetry"></div>
+        <div class="explanation">指标根据产品物模型的名称与标识匹配。未配置的属性或缺失读数显示“--”，不会生成模拟数据。所有可读属性均在下方展示。</div>
+      </section>
+    </div>
+    <section class="panel all-fields">
+      <div class="section-head"><h2>设备实时属性</h2><span class="muted" id="fieldCount">THING MODEL</span></div>
+      <div class="fields" id="fields"><div class="empty">等待加载产品物模型</div></div>
+    </section>
+    <div class="footer"><span>大疆风格概念 Demo · 非 DJI 官方面板 · 仅数据展示，不提供起飞、返航或控制操作</span><span id="updated">尚未读取数据</span></div>
+  </main>
+  <!-- HTML 上传地址若与 Dashboard 不同域，请将 src 改为 Dashboard 的完整地址。 -->
+  <script src="/scene-sdk.js?v=1.1.0"></script>
+  <script>
+    (function () {
+      "use strict";
+      var device = null, things = [], readings = {}, unsubscribe = null, generation = 0;
+      var $ = function (id) { return document.getElementById(id); };
+      var metrics = [
+        { title: "飞行高度", match: /高度|海拔|altitude|height/i },
+        { title: "水平速度", match: /水平速度|地速|horizontal.?speed|ground.?speed|^speed$/i },
+        { title: "电池电量", match: /电量|电池百分比|battery.?percent|battery.?level|^battery$|^soc$/i },
+        { title: "卫星数量", match: /卫星|satellite|gps.?count/i },
+        { title: "航向角", match: /航向|heading|yaw/i },
+        { title: "垂直速度", match: /垂直速度|vertical.?speed/i },
+        { title: "链路信号", match: /信号|rssi|signal/i },
+        { title: "经度", match: /经度|longitude|^lng$|^lon$/i },
+        { title: "纬度", match: /纬度|latitude|^lat$/i }
+      ];
+      function escapeHtml(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function notify(text, error) { $("notice").textContent = text; $("notice").className = "notice" + (error ? " error" : ""); }
+      function report(error) { notify(error && error.message ? error.message : String(error), true); }
+      function format(value) {
+        if (value == null || value === "") return "--";
+        if (typeof value === "object") return JSON.stringify(value);
+        return String(value);
+      }
+      function valueOf(thing) { return thing ? readings[String(thing.name).toLowerCase()] : undefined; }
+      function metricHtml(metric, hero) {
+        var thing = things.find(function (item) { return metric.match.test(item.name) || metric.match.test(item.title || ""); });
+        return '<div class="' + (hero ? "hero-stat" : "reading") + '"><div class="label">' +
+          escapeHtml(thing ? thing.title || thing.name : metric.title) + '</div><div class="value">' +
+          escapeHtml(format(valueOf(thing))) + '<span class="unit">' + escapeHtml(thing && thing.unit || "") + "</span></div></div>";
+      }
+      function render() {
+        $("hero").innerHTML = metrics.slice(0, 3).map(function (m) { return metricHtml(m, true); }).join("");
+        $("telemetry").innerHTML = metrics.slice(3).map(function (m) { return metricHtml(m, false); }).join("");
+        $("fieldCount").textContent = things.length + " 项可读属性";
+        $("fields").innerHTML = things.length ? things.map(function (thing) {
+          return '<div class="field"><div class="label">' + escapeHtml(thing.title || thing.name) +
+            '</div><div class="value">' + escapeHtml(format(valueOf(thing))) +
+            '<span class="unit">' + escapeHtml(thing.unit || "") + '</span></div><div class="field-key">' +
+            escapeHtml(thing.name) + "</div></div>";
+        }).join("") : '<div class="empty">暂无可读物模型，请为产品配置 access 为 read 或 rw 的属性</div>';
+      }
+      function merge(data) {
+        if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+        Object.keys(data).forEach(function (key) {
+          var entry = data[key];
+          readings[key.toLowerCase()] = entry && typeof entry === "object" && "value" in entry ? entry.value : entry;
+        });
+        render();
+        return true;
+      }
+      async function load() {
+        var run = ++generation;
+        $("refresh").disabled = true;
+        notify("正在读取当前设备、产品信息及最新采集记录…");
+        try {
+          if (!window.SceneSDK || typeof window.SceneSDK.getDeviceProduct !== "function") {
+            throw new Error("SDK 未加载或版本过旧，请检查 Dashboard 地址下的 /scene-sdk.js?v=1.1.0");
+          }
+          if (unsubscribe) { var stop = unsubscribe; unsubscribe = null; await stop(); }
+          var result = await window.SceneSDK.getDevices({ pageNum: 1, pageSize: 1 });
+          if (run !== generation) return;
+          device = result.rows && result.rows[0];
+          if (!device) {
+            things = []; readings = {}; render();
+            notify("当前没有可访问的设备，请在设备详情的实时数据区域打开本面板。");
+            return;
+          }
+          $("deviceName").textContent = device.name || "无人机遥测面板";
+          $("deviceMeta").textContent = "DEVICE / " + (device.addr || device.id);
+          $("aircraftLabel").textContent = device.addr || String(device.id);
+          var online = device.onlineStatus && device.onlineStatus.online;
+          $("online").textContent = online == null ? "状态未知" : Number(online) === 1 ? "设备在线" : "设备离线";
+          $("online").className = "tag" + (Number(online) === 1 ? " online" : "");
+          var responses = await Promise.all([
+            window.SceneSDK.getDeviceProduct(device.id),
+            window.SceneSDK.getDeviceLatestRecord(device.id)
+          ]);
+          if (run !== generation) return;
+          var product = responses[0].product, latest = responses[1];
+          things = product ? product.thing.filter(function (thing) {
+            return thing && typeof thing.name === "string" && (thing.access === "read" || thing.access === "rw");
+          }) : [];
+          readings = {}; merge(latest); render();
+          $("updated").textContent = latest ? "最新记录 · " + (latest.createtime || latest.createTime || "时间未知") : "暂无最新记录";
+          notify(!product ? "设备未关联产品，请先关联产品并配置物模型。" : !things.length
+            ? "产品未配置可读物模型；面板不会猜测数据字段。"
+            : latest ? "已加载最新记录，正在等待设备实时上报。" : "暂无采集记录，正在等待设备首次上报。");
+          var cancel = await window.SceneSDK.subscribeDeviceStatus(device.id, function (data) {
+            if (run !== generation) return;
+            if (!merge(data)) { notify("收到非结构化实时消息，无法按物模型展示。", true); return; }
+            $("updated").textContent = "收到实时消息 · " + new Date().toLocaleTimeString("zh-CN");
+            notify(things.length ? "实时遥测数据已更新。在线状态为查询快照，可点击刷新重新查询。" : "收到实时消息，但产品尚未配置可读物模型。");
+          });
+          if (run !== generation) { await cancel(); return; }
+          unsubscribe = cancel;
+        } catch (error) { if (run === generation) report(error); }
+        finally { if (run === generation) $("refresh").disabled = false; }
+      }
+      $("refresh").addEventListener("click", load);
+      $("fullscreen").addEventListener("click", async function () {
+        try {
+          if (document.fullscreenElement) await document.exitFullscreen();
+          else if (document.fullscreenEnabled) await document.documentElement.requestFullscreen();
+          else throw new Error("当前浏览器或父页面未允许全屏。");
+        } catch (error) { report(error); }
+      });
+      document.addEventListener("fullscreenchange", function () { $("fullscreen").textContent = document.fullscreenElement ? "退出全屏" : "全屏"; });
+      window.addEventListener("pagehide", function () {
+        generation++;
+        if (unsubscribe) { unsubscribe().catch(function (error) { console.error("取消实时订阅失败", error); }); unsubscribe = null; }
+      });
+      render();
+      window.addEventListener("load", load);
+    })();
+  </script>
+</body>
+</html>
