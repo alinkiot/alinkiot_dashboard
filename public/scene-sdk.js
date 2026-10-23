@@ -8,7 +8,9 @@
  * 2. HTML 必须在 Dashboard 场景或设备详情的 HTML 面板 iframe 中运行。
  *    单独打开 HTML 无法调用父页面接口。建议在 window 的 load 事件后初始化数据和订阅。
  * 3. 父页面负责登录鉴权、后端请求和 MQTT；不要在 HTML 中填写 token 或 MQTT 凭据。
- *    本 SDK 不会自动注入 HTML，也不提供设备控制/写入方法。
+ *    本 SDK 不会自动注入 HTML；控制请求通过父页面校验和人工确认后下发。
+ * 4. SDK 自动上报 body 内容高度，设备详情的 HTML 面板会随内容撑开。
+ *    场景视图仍铺满容器；页面主体应使用正常文档流，避免只用绝对定位布局。
  *
  * 【AI 生成页面时的数据规则】
  * - 场景模式可访问当前场景设备；产品面板模式只可访问设备详情当前设备。
@@ -106,6 +108,37 @@
   var requestId = 0;
   var subscriptionId = 0;
   var timeoutMs = 30000;
+  var resizeScheduled = false;
+
+  function reportHeight() {
+    if (resizeScheduled) return;
+    resizeScheduled = true;
+    window.requestAnimationFrame(function () {
+      resizeScheduled = false;
+      if (!window.document.body) return;
+      var body = window.document.body;
+      var style = window.getComputedStyle(body);
+      var height = Math.ceil(Math.max(body.scrollHeight, body.getBoundingClientRect().height) +
+        (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0));
+      window.parent.postMessage({ type: "scene-sdk-resize", height: height }, "*");
+    });
+  }
+
+  function observeHeight() {
+    if (!window.document.body) return;
+    if (window.ResizeObserver) {
+      new window.ResizeObserver(reportHeight).observe(window.document.body);
+    }
+    reportHeight();
+  }
+
+  if (window.document.readyState === "loading") {
+    window.document.addEventListener("DOMContentLoaded", observeHeight, { once: true });
+  } else {
+    observeHeight();
+  }
+  window.addEventListener("load", reportHeight);
+  window.addEventListener("resize", reportHeight);
 
   window.addEventListener("message", function (event) {
     if (event.source !== window.parent) return;
@@ -184,7 +217,7 @@
      * @returns {Promise<{device: Object, product: ?Object}>}
      * 无关联产品时 product 为 null；有产品时保留产品字段，并解析：
      * thing: 物模型数组，条目通常含 name/title/unit/access；
-     * cmd: 从 control 解析的控制指令数组（仅返回配置，SDK 不执行指令）；
+     * cmd: 从 control 解析的控制指令数组，可通过 controlDevice 请求下发；
      * supportImport: 从 config 中提取的数据导入支持标志。
      * 不需要再次 JSON.parse(product.thing)。产品 JSON 无效时 Promise 会拒绝。
      */
@@ -201,6 +234,29 @@
      */
     getDeviceLatestRecord: function (deviceId) {
       return call("getDeviceLatestRecord", { deviceId: deviceId });
+    },
+    /**
+     * 下发产品配置的控制指令或可写物模型属性，父页面会弹出确认框。
+     * 仅可控制当前设备/当前场景设备；不能指定地址、MQTT 主题或任意接口。
+     * @param {string|number} deviceId 设备 ID。
+     * @param {string} name product.cmd 的 name，或 access 为 rw/write 的物模型 name。
+     * @param {string|number} value 下发值；格式由产品 cmd.format 或 thing.type 决定。
+     * 支持 integer/float/string/hex；HEX 使用不带空格和 0x 前缀的完整字节字符串。
+     * 按钮仅允许预设值，枚举仅允许配置选项；数字遵守已配置的 min/max。
+     * @returns {Promise<{submitted: boolean, deviceId: (string|number), name: string,
+     * value: (string|number), format: string}>}
+     * submitted 仅表示控制接口已接受请求，不表示设备执行成功。
+     * 取消、非法字段/值、接口拒绝或 30 秒超时均 reject。超时后不要自动重试，
+     * 请求可能已发送，应核实设备实时反馈。父页面同一时间只处理一个控制请求。
+     * 仅为产品已配置的指令生成按钮，不要虚构起飞、返航等指令或自动执行控制。
+     * @example
+     * // 用户点击按钮后执行，command 来自 getDeviceProduct 返回的 product.cmd。
+     * SceneSDK.controlDevice(deviceId, command.name, command.value)
+     *   .then(result => console.log("请求已提交，等待设备反馈", result))
+     *   .catch(error => console.error("下发未完成", error.message));
+     */
+    controlDevice: function (deviceId, name, value) {
+      return call("controlDevice", { deviceId: deviceId, name: name, value: value });
     },
     /**
      * 分页查询设备历史记录，按采集时间倒序返回；画时间曲线时按时间升序排列。

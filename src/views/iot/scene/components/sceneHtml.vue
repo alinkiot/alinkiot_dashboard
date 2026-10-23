@@ -1,5 +1,5 @@
 <template>
-  <div v-loading="loading" class="html-root">
+  <div v-loading="loading" class="html-root" :class="{ 'device-html-root': device }">
     <MqttBoard
       v-if="!device && mqttSubscriptions.length"
       :subscription="mqttSubscriptions"
@@ -24,6 +24,7 @@
       <iframe
         v-else-if="src"
         :src="src"
+        :style="device ? { height: frameHeight + 'px' } : null"
         @load="handleFrameLoad"
         sandbox="allow-scripts allow-forms allow-popups"
         allow="fullscreen"
@@ -87,6 +88,7 @@ import FileUpload from "@/components/FileUpload/index.vue";
 import MqttBoard from "@/components/MqttBoard/index.vue";
 import { isExternal } from "@/utils/validate";
 import { getObject, getDevHisLast, queryDevByScene, queryDevStatus, queryObject as queryTable } from "@/api/iot/table";
+import { deviceControl } from "@/api/iot/system";
 
 export default {
   dicts: [],
@@ -120,6 +122,9 @@ export default {
   data() {
     return {
       loading: false,
+      frameHeight: 360,
+      controlPending: false,
+      frameGeneration: 0,
       openSelector: false,
       scene_data: undefined,
       form: {},
@@ -189,6 +194,12 @@ export default {
         return;
       }
       const message = event.data;
+      if (message && message.type === "scene-sdk-resize") {
+        if (this.device && typeof message.height === "number" && Number.isFinite(message.height)) {
+          this.frameHeight = Math.min(Math.max(Math.ceil(message.height), 360), 30000);
+        }
+        return;
+      }
       if (!message || message.type !== "scene-sdk-request") {
         return;
       }
@@ -213,6 +224,9 @@ export default {
               message.args && message.args.deviceId,
               (message.args && message.args.options) || {}
             );
+            break;
+          case "controlDevice":
+            result = await this.controlSceneDevice(message.args || {}, event.source);
             break;
           case "subscribeDeviceStatus":
             result = await this.subscribeSceneDevice(message.args && message.args.deviceId, message.args && message.args.subscriptionId);
@@ -345,6 +359,88 @@ export default {
       const response = await getDevHisLast({ addr: device.addr });
       return response.data || null;
     },
+    async controlSceneDevice(args, source) {
+      if (this.controlPending) throw new Error("已有控制请求等待处理");
+      this.controlPending = true;
+      const frame = this.$el.querySelector("iframe");
+      const originalSrc = this.src;
+      const generation = this.frameGeneration;
+      const scopeId = this.device ? this.device.id : this.scene && this.scene.id;
+      const assertCurrentFrame = () => {
+        const current = this.$el && this.$el.querySelector("iframe");
+        const currentScope = this.device ? this.device.id : this.scene && this.scene.id;
+        if (this._isDestroyed || current !== frame || !current ||
+            current.contentWindow !== source || this.src !== originalSrc || currentScope !== scopeId ||
+            this.frameGeneration !== generation) {
+          throw new Error("面板已切换，请重新发起控制请求");
+        }
+      };
+      try {
+        if (typeof args.name !== "string" || !args.name.trim()) {
+          throw new Error("控制字段不能为空");
+        }
+        const { device, product } = await this.getSceneDeviceProduct(args.deviceId);
+        assertCurrentFrame();
+        if (!device.addr || !product) throw new Error("设备地址或产品配置缺失");
+        const command = product.cmd.find(item => item.name === args.name);
+        const property = product.thing.find(item =>
+          item.name === args.name && (item.access === "rw" || item.access === "write")
+        );
+        const definition = command || property;
+        if (!definition) throw new Error("该字段不是产品配置的控制指令或可写属性");
+        const format = command ? command.format : property.type;
+        if (!["integer", "float", "string", "hex"].includes(format)) {
+          throw new Error("控制字段的数据类型未配置或不受支持");
+        }
+        let value = args.value;
+        if ((typeof value !== "string" && typeof value !== "number") || value === "") {
+          throw new Error("下发值必须是非空字符串或数字");
+        }
+        if (format === "integer" || format === "float") {
+          if (typeof value === "string" && !value.trim()) throw new Error("下发值不能为空");
+          value = Number(value);
+          if (!Number.isFinite(value) || (format === "integer" && !Number.isSafeInteger(value))) {
+            throw new Error("下发值不符合产品配置的数据类型");
+          }
+          if (definition.min !== undefined && definition.min !== "" && value < Number(definition.min) ||
+              definition.max !== undefined && definition.max !== "" && value > Number(definition.max)) {
+            throw new Error("下发值超出产品配置范围");
+          }
+        } else {
+          value = String(value);
+          if (format === "hex" && !/^(?:[0-9a-fA-F]{2})+$/.test(value)) {
+            throw new Error("HEX 下发值必须为完整字节的十六进制字符串");
+          }
+        }
+        if (command && command.ctrlType === "btn" && String(value) !== String(command.value)) {
+          throw new Error("按钮指令仅允许下发配置的预设值");
+        }
+        if (command && command.ctrlType === "enum" &&
+            !(command.options || []).some(option => String(option.value) === String(value))) {
+          throw new Error("下发值不在控制指令的枚举选项中");
+        }
+        try {
+          await this.$confirm(
+            "设备：" + (device.name || device.addr) + "；字段：" +
+            (definition.title || args.name) + "；下发值：" + value,
+            "确认设备控制",
+            { type: "warning", confirmButtonText: "确认下发", cancelButtonText: "取消", closeOnClickModal: false }
+          );
+        } catch (error) {
+          if (error === "cancel" || error === "close") throw new Error("已取消控制请求");
+          throw error;
+        }
+        assertCurrentFrame();
+        await this.getSceneDevice(args.deviceId);
+        assertCurrentFrame();
+        await deviceControl(encodeURIComponent(device.addr), {
+          type: "write", name: args.name, value, format
+        });
+        return { submitted: true, deviceId: device.id, name: args.name, value, format };
+      } finally {
+        this.controlPending = false;
+      }
+    },
     async getSceneDeviceHistory(deviceId, options) {
       const device = await this.getSceneDevice(deviceId);
       const pageNum = Math.max(Number(options.pageNum) || 1, 1);
@@ -419,6 +515,7 @@ export default {
       this.mqttSubscriptions = topics.map(addr => ({ topic: "p/out/" + addr, qos: 0 }));
     },
     handleFrameLoad() {
+      this.frameGeneration++;
       this.realtimeSubscribers = {};
       this.updateMqttSubscriptions();
     },
@@ -521,6 +618,18 @@ export default {
   height: 100%;
   min-height: 360px;
   border: 0;
+}
+
+.device-html-root {
+  height: auto;
+
+  .html-box {
+    flex: none;
+  }
+
+  .html-frame {
+    display: block;
+  }
 }
 
 .sdk-help {
