@@ -31,7 +31,7 @@ export default {
       default: false
     },
     subscription: {
-      type: Object,
+      type: [Object, Array],
       default: function(){ return undefined; }
     },
     publish: {
@@ -58,6 +58,7 @@ export default {
       client: {
         connected: false,
       },
+      subscribedTopics: [],
       subscribeSuccess: false,
       connecting: false,
       retryTimes: 0,
@@ -85,6 +86,11 @@ export default {
     this.connection.username = userName;
     this.connection.password = token;
     this.createConnection();
+  },
+  beforeDestroy() {
+    if (this.client && this.client.end) {
+      this.client.end(true);
+    }
   },
   methods: {
     initData() {
@@ -136,18 +142,25 @@ export default {
       }
     },
     doSubscribe() {
-      if(this.client.subscribe && this.subscription){
-        const { topic, qos } = this.subscription;
-        if(topic && topic !==''){
-          this.client.subscribe([topic], { qos }, (error, res) => {
-            if (error) {
-              console.log('Subscribe error ' + topic, error, res)
-              return
-            }
-            console.log('Subscribe success ' + topic)
-            this.subscribeSuccess = true
-          })
-        }
+      if (!this.client.subscribe) return;
+      const subscriptions = (Array.isArray(this.subscription) ? this.subscription : [this.subscription])
+        .filter(item => item && item.topic)
+        .map(item => ({ topic: item.topic, qos: item.qos || 0 }));
+      const topics = subscriptions.map(item => item.topic);
+      const removedTopics = this.subscribedTopics.filter(topic => !topics.includes(topic));
+      if (removedTopics.length && this.client.unsubscribe) {
+        this.client.unsubscribe(removedTopics);
+      }
+      this.subscribedTopics = topics;
+      if (subscriptions.length) {
+        this.client.subscribe(subscriptions, error => {
+          if (error) {
+            console.log('Subscribe error', error);
+            return;
+          }
+          console.log('Subscribe success', topics.join(','));
+          this.subscribeSuccess = true;
+        });
       }
     },
     doUnSubscribe() {

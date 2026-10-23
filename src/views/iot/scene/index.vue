@@ -20,41 +20,11 @@
       </el-form-item>
     </el-form>
     <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-            type="primary"
-
-            icon="el-icon-plus"
-            size="mini"
-            @click="openDialog"
-            v-hasPermi="['system:scene:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-            v-if="!selectionMode"
-            type="danger"
-            icon="el-icon-delete"
-            size="mini"
-            @click="startSelection"
-            v-hasPermi="['system:scene:remove']"
-        >选择删除</el-button>
-        <el-button
-            v-else
-            type="danger"
-            icon="el-icon-delete"
-            size="mini"
-            :disabled="ids.length === 0"
-            @click="handleDelete"
-            v-hasPermi="['system:scene:remove']"
-        >删除{{ ids.length ? `（${ids.length}）` : '' }}</el-button>
-        <el-button
-            v-if="selectionMode"
-            size="mini"
-            @click="cancelSelection"
-        >取消</el-button>
+      <el-col :span="12">
+        <div class="scene-toolbar-title">场景管理</div>
       </el-col>
       <right-toolbar
+        class="scene-toolbar-actions"
         component="iot/scene/edit"
         :menuQuery='sceneQuery'
         :table="table"
@@ -86,6 +56,34 @@
           <div>
             <h2>{{ activeProjectTitle }}</h2>
             <span>共 {{ total }} 个场景</span>
+          </div>
+          <div class="scene-header-actions">
+            <el-button
+              type="primary"
+              icon="el-icon-plus"
+              size="mini"
+              @click="openDialog"
+              v-hasPermi="['system:scene:add']"
+            >新增场景</el-button>
+            <el-button
+              v-if="!selectionMode"
+              type="danger"
+              icon="el-icon-delete"
+              size="mini"
+              @click="startSelection"
+              v-hasPermi="['system:scene:remove']"
+            >选择删除</el-button>
+            <template v-else>
+              <el-button
+                type="danger"
+                icon="el-icon-delete"
+                size="mini"
+                :disabled="ids.length === 0"
+                @click="handleDelete"
+                v-hasPermi="['system:scene:remove']"
+              >删除{{ ids.length ? `（${ids.length}）` : '' }}</el-button>
+              <el-button size="mini" @click="cancelSelection">取消</el-button>
+            </template>
           </div>
         </div>
         <div v-if="tableList.length" class="scene-cards">
@@ -173,7 +171,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="视图列表：" prop="viewType">
-          <el-select v-model="scene.viewType" multiple  placeholder="视图类型" style="width: 100%;" clearable>
+          <el-select
+            v-model="scene.viewType"
+            multiple
+            placeholder="视图类型"
+            style="width: 100%;"
+            clearable
+          >
             <el-option
               v-for="dict in dict.type.iot_scene_type"
               :key="dict.value"
@@ -181,6 +185,20 @@
               :value="dict.value"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="自定义视图">
+          <el-select
+            class="custom-view-select"
+            v-model="scene.customViewNames"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            clearable
+            style="width: 100%;"
+            placeholder="输入名称后按回车添加标签"
+          />
+          <div class="custom-view-tip">每个标签会生成一个独立视图，可分别上传 AI 生成的 HTML 页面。</div>
         </el-form-item>
         <el-form-item label="是否禁用：" prop="status">
           <el-radio-group v-model="scene.status">
@@ -425,13 +443,24 @@ export default {
     handleEdit(row) {
       const scene = JSON.parse(JSON.stringify(row));
       scene['viewType'] = JSON.parse(scene.viewType);
+      const customViews = scene.viewType.filter(item => item.indexOf('custom:') === 0);
+      scene.viewType = scene.viewType.filter(item => item.indexOf('custom:') !== 0);
+      scene.customViewNames = customViews
+        .map(item => this.decodeCustomViewName(item.slice('custom:'.length)));
       this.scene = scene;
       // this.project = { id : row.project };
       this.open = true;
     },
     openDialog() {
-      this.scene = { status : "0", viewType : [] };
+      this.scene = { status : "0", viewType : [], customViewNames: [] };
       this.open = true;
+    },
+    decodeCustomViewName(encodedName) {
+      try {
+        return decodeURIComponent(encodedName);
+      } catch (error) {
+        return encodedName;
+      }
     },
     cancel() {
       this.open = false;
@@ -440,16 +469,22 @@ export default {
     submitForm: function() {
       this.$refs["createForm"].validate(valid => {
         if (valid) {
-          const viewType = this.scene.viewType;
+          const viewType = (this.scene.viewType || []).filter(item => item !== '__custom_view__');
+          const customViewNames = Array.from(new Set(
+            (this.scene.customViewNames || []).map(name => name.trim()).filter(Boolean)
+          ));
+          viewType.push(...customViewNames.map(name => 'custom:' + encodeURIComponent(name)));
           this.scene.viewType = JSON.stringify(viewType);
+          const scenePayload = { ...this.scene };
+          delete scenePayload.customViewNames;
           if (this.scene.id !== undefined) {
-            updateObject(this.table, this.scene).then(response => {
+            updateObject(this.table, scenePayload).then(response => {
               this.open = false;
               this.getList();
               this.$modal.msgSuccess("更新成功");
             });
           } else {
-            createObject(this.table, this.scene).then(response => {
+            createObject(this.table, scenePayload).then(response => {
               this.open = false;
               this.getList();
               this.$modal.msgSuccess("创建成功");
@@ -498,6 +533,17 @@ export default {
   display: flex;
   min-height: 420px;
   gap: 16px;
+}
+
+.scene-toolbar-title {
+  padding: 7px 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+::v-deep .scene-toolbar-actions {
+  float: right;
 }
 
 .scene-project-menu {
@@ -618,6 +664,20 @@ export default {
     color: #909399;
     font-size: 12px;
   }
+}
+
+.custom-view-tip {
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scene-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .scene-cards {
@@ -789,6 +849,12 @@ export default {
 
   .scene-content-header {
     margin-top: 4px;
+    align-items: flex-start;
+  }
+
+  .scene-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .scene-cards {

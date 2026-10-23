@@ -63,6 +63,11 @@ export default {
       type: Array,
       default: () => ["doc", "xls", "ppt", "txt", "pdf", "csv"],
     },
+    // 成功上传后以新文件替换当前列表
+    replaceExisting: {
+      type: Boolean,
+      default: false
+    },
     // 是否显示提示
     isShowTip: {
       type: Boolean,
@@ -164,7 +169,9 @@ export default {
         type: res.contentType
       });
       if (this.uploadList.length === this.number) {
-        this.fileList = this.fileList.concat(this.uploadList);
+        this.fileList = this.replaceExisting
+          ? this.uploadList.slice()
+          : this.fileList.concat(this.uploadList);
         this.uploadList = [];
         this.number = 0;
         this.$emit("input", this.listToString(this.fileList));

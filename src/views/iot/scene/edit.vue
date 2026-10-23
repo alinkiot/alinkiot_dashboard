@@ -313,12 +313,22 @@ export default {
       this.loading = true;
       getDicts("iot_scene_type").then((res) => {
         const items = res.data;
-        this.scene.viewType.map((key) => {
-          items.filter((dict) => {
-            if (dict.dictValue === key) {
-              tabs.push({ name: key, title: dict.dictLabel });
+        this.scene.viewType.forEach(key => {
+          if (key.indexOf('custom:') === 0) {
+            const encodedName = key.slice('custom:'.length);
+            let title = encodedName;
+            try {
+              title = decodeURIComponent(encodedName);
+            } catch (error) {
+              title = encodedName;
             }
-          });
+            tabs.push({ name: key, title });
+            return;
+          }
+          const dict = items.find(item => item.dictValue === key);
+          if (dict) {
+            tabs.push({ name: key, title: dict.dictLabel });
+          }
         });
         if (tabs.length > 0) {
           if(!this.activeName || tabs.filter(item => { return item.name === this.activeName }).length === 0){
