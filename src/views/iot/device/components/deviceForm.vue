@@ -9,11 +9,11 @@
     </el-card>
     <el-row v-loading="loading">
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="设备地址：" prop="addr">
-          <el-input v-model="form.addr" placeholder="请输入设备地址"/>
-        </el-form-item>
         <el-form-item label="设备名称：" prop="name">
-          <el-input v-model="form.name" placeholder="请输入设备名称"/>
+          <el-input v-model="form.name" placeholder="取一个好记的名称"/>
+        </el-form-item>
+        <el-form-item label="设备地址：" prop="addr">
+          <el-input v-model="form.addr" placeholder="分配一个惟一标识"/>
         </el-form-item>
         <InputTableSelect
           :queryId="form.product"
