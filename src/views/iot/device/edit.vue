@@ -20,7 +20,7 @@
         <el-tab-pane label="设备地图" name="mapTab" v-if="device">
           <MapBoard ref="mapBoard" :device="device"/>
         </el-tab-pane>
-        <el-tab-pane label="实时数据" name="devStatusPane" v-if="product && product.thing && product.thing !== '[]'">
+        <el-tab-pane label="实时状态" name="devStatusPane" v-if="product && product.thing && product.thing !== '[]'">
           <DeviceBoard :devId="deviceId" :showImport="true"/>
         </el-tab-pane>
       </el-tabs>
