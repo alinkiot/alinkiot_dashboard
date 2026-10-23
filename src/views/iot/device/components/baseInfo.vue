@@ -59,6 +59,7 @@ import DeviceForm from "@/views/iot/device/components/deviceForm.vue";
 import {checkRegx, randomString} from "@/assets/js/iot";
 import ExtendEditor from "@/views/iot/product/components/extendEditor.vue";
 import {kickDevice} from "@/api/iot/system";
+import {checkPermi} from "@/utils/permission";
 
 export default {
   components: {
@@ -84,6 +85,7 @@ export default {
   data() {
     return {
       loading: false,
+      kicking: false,
       device_columns: [],
       product_columns: [],
       openSecretSelector: false,
@@ -157,13 +159,24 @@ export default {
         }
       }
     },
-    handleKick(device) {
-      kickDevice({addr : device.addr}).then(response => {
-        this.getDeviceStatus();
-        this.$modal.msgSuccess("操作成功");
-      }).catch(err =>{
-        console.log(err);
-      })
+    async handleKick(device) {
+      if (this.kicking || !checkPermi(["system:device:kick"])) return;
+      this.kicking = true;
+      try {
+        try {
+          await this.$modal.confirm('确认将设备“' + (device.name || device.addr) + '”下线吗？此操作将断开设备当前连接。');
+        } catch (error) {
+          if (error === "cancel" || error === "close") return;
+          throw error;
+        }
+        await kickDevice({addr: device.addr});
+        this.$modal.msgSuccess("设备下线请求已发送");
+        await this.getDeviceStatus();
+      } catch (error) {
+        this.$modal.msgError(error && error.message ? error.message : "设备下线或状态刷新失败");
+      } finally {
+        this.kicking = false;
+      }
     },
     createSecret: function(){
       this.secret.value = randomString(16);
@@ -182,7 +195,7 @@ export default {
         this.device.lastOnline = undefined
       }
       this.buttons = [{icon: 'el-icon-edit-outline', key: 'editDevice', title:'编辑' }];
-      if(this.device.online){
+      if(this.device.online && checkPermi(["system:device:kick"])){
         this.buttons.push({icon: 'el-icon-close', key: 'kickDevice', title:'下线' })
       }
       this.$emit('onload', {

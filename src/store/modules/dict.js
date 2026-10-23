@@ -4,17 +4,22 @@ const state = {
 const mutations = {
   SET_DICT: (state, { key, value }) => {
     if (key !== null && key !== "") {
-      state.dict.push({
-        key: key,
-        value: value
-      })
+      const existing = state.dict.find(item => item.key === key)
+      if (existing) {
+        existing.value = value
+      } else {
+        state.dict.push({
+          key: key,
+          value: value
+        })
+      }
     }
   },
   REMOVE_DICT: (state, key) => {
     try {
       for (let i = 0; i < state.dict.length; i++) {
         if (state.dict[i].key == key) {
-          state.dict.splice(i, i)
+          state.dict.splice(i, 1)
           return true
         }
       }
@@ -47,4 +52,3 @@ export default {
   mutations,
   actions
 }
-

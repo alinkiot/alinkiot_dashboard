@@ -129,6 +129,11 @@
     if (window.ResizeObserver) {
       new window.ResizeObserver(reportHeight).observe(window.document.body);
     }
+    if (window.MutationObserver) {
+      new window.MutationObserver(reportHeight).observe(window.document.body, {
+        childList: true, subtree: true, characterData: true, attributes: true
+      });
+    }
     reportHeight();
   }
 
@@ -144,6 +149,10 @@
     if (event.source !== window.parent) return;
     var message = event.data;
     if (!message) return;
+    if (message.type === "scene-sdk-measure") {
+      reportHeight();
+      return;
+    }
     if (message.type === "scene-sdk-event") {
       var callback = subscribers[message.subscriptionId];
       if (callback && message.event === "device-status") {

@@ -114,7 +114,6 @@
 <script>
 import {  delObject, createObject, updateObject } from "@/api/iot/table";
 import InputTableSelect from "@/components/InputTableSelect";
-import { kickDevice } from "@/api/iot/system";
 import DeviceForm from "./components/deviceForm.vue";
 import DeviceTable from "./components/deviceTable.vue"
 
@@ -161,12 +160,6 @@ export default {
       menuQuery: {},
       componentPath:'iot/device/index',
       buttons: [
-        {
-          text: '下线',
-          event: 'kick',
-          icon: 'el-icon-warning-outline',
-          permission: "['system:device:kick']"
-        },
         {
           text: '详情',
           event: 'goEdit',
@@ -281,14 +274,6 @@ export default {
       this.menuQuery = { id : this.ids.join(',')};
       this.componentPath = 'iot/device/edit';
     },
-    handleKick() {
-      const device = this.tableList.filter(item => { return item.id === this.ids[0] });
-      kickDevice({addr : device[0].addr}).then(response => {
-        this.$modal.msgSuccess("操作成功");
-      }).catch(err =>{
-        console.log(err);
-      })
-    },
     /** 新增按钮操作 */
     handleAdd() {
       this.open = true;
@@ -308,12 +293,6 @@ export default {
             query: {id: row.id}
           });
         }
-      } else if(event === 'kick'){
-        kickDevice({addr : row.addr}).then(response => {
-          this.$modal.msgSuccess("操作成功");
-        }).catch(err =>{
-          console.log(err);
-        })
       }
     },
     handleDeleteClick() {

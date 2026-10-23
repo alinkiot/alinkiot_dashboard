@@ -65,13 +65,16 @@ export default {
   computed: {
     htmlPanel() {
       if (!this.product) return "";
-      const panel = this.dict.type.iot_product_mgr.find(item =>
-        item.value === this.product.category && item.raw && item.raw.listClass === "file"
+      const panels = this.dict.type.iot_product_mgr.filter(item =>
+        item.raw && item.raw.listClass === "file"
       );
-      if (!panel) return "";
+      const panel = panels.find(item => item.value === this.product.category);
       try {
-        const media = parseMediaDict(panel.raw);
-        return media.type === "html" ? media.path : "";
+        if (panel) {
+          const media = parseMediaDict(panel.raw);
+          return media.type === "html" ? media.path : "";
+        }
+        return "";
       } catch (error) {
         console.error("产品面板字典格式无效", error);
         return "";

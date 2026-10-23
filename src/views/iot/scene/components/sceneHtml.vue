@@ -159,9 +159,16 @@ export default {
   },
   mounted() {
     window.addEventListener("message", this.handleSdkMessage);
+    if (this.device && window.ResizeObserver) {
+      this.panelResizeObserver = new window.ResizeObserver(() => {
+        this.requestFrameHeight();
+      });
+      this.panelResizeObserver.observe(this.$el);
+    }
   },
   beforeDestroy() {
     window.removeEventListener("message", this.handleSdkMessage);
+    if (this.panelResizeObserver) this.panelResizeObserver.disconnect();
     this.realtimeSubscribers = {};
     this.mqttSubscriptions = [];
   },
@@ -514,10 +521,17 @@ export default {
       ));
       this.mqttSubscriptions = topics.map(addr => ({ topic: "p/out/" + addr, qos: 0 }));
     },
+    requestFrameHeight() {
+      const frame = this.$el && this.$el.querySelector("iframe");
+      if (this.device && frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "scene-sdk-measure" }, "*");
+      }
+    },
     handleFrameLoad() {
       this.frameGeneration++;
       this.realtimeSubscribers = {};
       this.updateMqttSubscriptions();
+      this.requestFrameHeight();
     },
     handleMqttMessage(topic, message) {
       let data;
