@@ -8,7 +8,7 @@
       @click="itemClick"
     />
     <el-dialog title="扩展字段" :visible.sync="open" >
-      <el-form ref="cfgForm" :rules="cfgFormRule" :model="form" label-position="top" prop="cfgForm">
+      <el-form ref="cfgForm" :rules="cfgFormRule" :model="form" label-width="100px" prop="cfgForm">
         <el-form-item label="字段名称" prop="title">
           <el-input v-model="form.title" placeholder="请输入字段名称" :disabled="isPresetField"/>
           <div class="form-tip" v-if="isPresetField">该字段为预设字段，名称不可修改，仅可修改数据值</div>
@@ -17,17 +17,6 @@
           <el-form-item label="字段标识" prop="name" >
             <el-input v-model="form.name" placeholder="请输入字段标识"/>
           </el-form-item>
-          <el-form-item label="数据类型" prop="type">
-            <el-select v-model.trim="form.type" placeholder="数据类型">
-              <el-option
-                v-for="dict in dict.type.iot_data_type"
-                :key="dict.value"
-                :label="dict.label"
-                :value="dict.value"
-              />
-              <el-option label="HEX" value="hex" />
-            </el-select>
-          </el-form-item>
         </template>
         <el-form-item label="值形式" prop="valueType" v-if="!isPresetField">
           <el-radio-group v-model="form.valueType" size="small">
@@ -35,6 +24,17 @@
             <el-radio-button label="enum">枚举型</el-radio-button>
           </el-radio-group>
           <div class="form-tip">输入型：数据值自由输入；枚举型：预设多个选项，编辑数据值时下拉选择</div>
+        </el-form-item>
+        <el-form-item v-if="isCreate" label="数据类型" prop="type">
+          <el-select v-model.trim="form.type" placeholder="数据类型">
+            <el-option
+              v-for="dict in dict.type.iot_data_type"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            />
+            <el-option label="HEX" value="hex" />
+          </el-select>
         </el-form-item>
         <el-form-item label="枚举选项" prop="options" v-if="form.valueType === 'enum' && !isPresetField">
           <div class="enum-opt" v-for="(opt, idx) in form.options" :key="idx">

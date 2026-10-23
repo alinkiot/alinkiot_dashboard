@@ -9,45 +9,58 @@
                  v-hasPermi="['system:dict:add']">分享</el-button>
     </el-button-group>
     <ThingTable :things="things" @selectDone="editThing" @deleteThing="thingDelete"/>
-    <el-dialog title="物模型编辑" :visible.sync="openThingEditor" width="550px">
+    <el-dialog title="物模型编辑" :visible.sync="openThingEditor" width="680px">
       <el-form ref="thingForm" :model="dataThing" :rules="rulesThing" label-width="100px">
         <el-tabs v-model="activeName" type="border-card">
           <el-tab-pane label="基本信息" name="base">
-            <el-form-item label="监测名称" prop="title">
-              <el-input v-model.trim="dataThing.title" placeholder="请输入监测点名称"/>
+            <el-form-item label="属性名" prop="title">
+              <div class="property-name-row">
+                <el-input v-model.trim="dataThing.title" placeholder="请输入属性名"/>
+                <el-popover
+                  placement="bottom-end"
+                  width="560"
+                  trigger="click"
+                  @show="$refs['iconSelect'].reset()"
+                >
+                  <IconSelect ref="iconSelect" @selected="changeIcon" />
+                  <el-button slot="reference" class="property-icon-button" title="选择属性图标" aria-label="选择属性图标">
+                    <svg-icon v-if="dataThing.icon" :icon-class="dataThing.icon" />
+                    <i v-else class="el-icon-picture-outline" />
+                  </el-button>
+                </el-popover>
+                <el-button v-if="dataThing.icon" type="text" icon="el-icon-close" title="清除图标" aria-label="清除图标" @click="changeIcon('')" />
+              </div>
             </el-form-item>
-            <el-form-item label="变量名" prop="name">
-              <el-input v-model.trim="dataThing.name" placeholder="请输入变量名"/>
+            <el-form-item label="字段" prop="name">
+              <el-input v-model.trim="dataThing.name" placeholder="请输入字段"/>
             </el-form-item>
-            <el-form-item label="数据类型" prop="type">
-              <el-select v-model.trim="dataThing.type" placeholder="数据类型">
-                <el-option
-                    v-for="dict in dict.type.iot_data_type"
-                    :key="dict.value"
-                    :label="dict.label"
-                    :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
+            <el-row :gutter="16">
+              <el-col :span="dataThing.type !== 'string' ? 12 : 24">
+                <el-form-item label="数据类型" prop="type">
+                  <el-select v-model.trim="dataThing.type" placeholder="数据类型" style="width: 100%;">
+                    <el-option
+                        v-for="dict in dict.type.iot_data_type"
+                        :key="dict.value"
+                        :label="dict.label"
+                        :value="dict.value"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col v-if="dataThing.type !== 'string'" :span="12">
+                <el-form-item label="精度" prop="precision">
+                  <el-input type="number" min=0 v-model.number="dataThing.precision" placeholder="精度"/>
+                </el-form-item>
+              </el-col>
+            </el-row>
 
             <template v-if="dataThing.type !== 'string'">
-              <el-form-item label="精度" prop="precision">
-                <el-input type="number" min=0 v-model.number="dataThing.precision" placeholder="精度"/>
-              </el-form-item>
               <el-form-item label="最小值" prop="min">
                 <el-input type="number" v-model="dataThing.min" placeholder="最小值"/>
               </el-form-item>
               <el-form-item label="最大值" prop="max">
                 <el-input type="number" v-model="dataThing.max" placeholder="最大值"/>
               </el-form-item>
-            
-              <el-form-item label="倍率" prop="rate">
-                <el-input v-model="dataThing.rate" placeholder="倍率"/>
-              </el-form-item>
-              <el-form-item label="偏移量" prop="offset">
-                <el-input type="number" v-model="dataThing.offset" placeholder="偏移量"/>
-              </el-form-item>
-
               <el-form-item :label="'单位' + (dataThing.unit ? '(' + dataThing.unit + ')':'')" prop="unit">
                 <el-select v-model.trim="dataThing.unit" @change="changeUnit" placeholder="请选择数据单位" clearable>
                   <el-option
@@ -62,25 +75,6 @@
               </el-form-item>
             </template>
 
-            <el-form-item label="图标显示" prop="icon">
-              <el-popover
-                placement="bottom-start"
-                width="560"
-                trigger="click"
-                @show="$refs['iconSelect'].reset()"
-              >
-                <IconSelect ref="iconSelect" @selected="changeIcon" />
-                <el-input slot="reference" v-model="dataThing.icon" placeholder="点击选择图标" clearable>
-                  <svg-icon
-                    v-if="dataThing.icon"
-                    slot="prefix"
-                    :icon-class="dataThing.icon"
-                    class="el-input__icon"
-                  />
-                  <i v-else slot="prefix" class="el-icon-search el-input__icon" />
-                </el-input>
-              </el-popover>
-            </el-form-item>
             <el-form-item label="读写权限" prop="access">
               <el-radio-group v-model="dataThing.access">
                 <el-radio
@@ -158,13 +152,13 @@ export default {
       ],
       rulesThing: {
         name: [
-          {required: true, validator: validate2Check2, message: "变量名称只能为_、0-9、a-z、A-Z", trigger: "blur"}
+          {required: true, validator: validate2Check2, message: "字段只能为_、0-9、a-z、A-Z", trigger: "blur"}
         ],
         type: [
           {required: true, message: "物模型数据格式不能为空", trigger: "blur"}
         ],
         title: [
-          {required: true, message: "功能名称不能为空", trigger: "blur"}
+          {required: true, message: "属性名不能为空", trigger: "blur"}
         ],
         rate: [
           {required: true, validator: checkNumber, message: "只能为数字、浮点", trigger: "blur"}
@@ -185,7 +179,7 @@ export default {
       }
     },
     openThingDialog: function () {
-      this.dataThing = { access : 'read', icon:'' };
+      this.dataThing = { access : 'read', icon:'', rate: 1, type: 'integer' };
       this.openThingEditor = true;
     },
     openShareDialog: function(){
@@ -248,8 +242,8 @@ export default {
           const name = this.dataThing.name;
           this.dataThing.max = this.dataThing.max ? Number(this.dataThing.max) : undefined;
           this.dataThing.min = this.dataThing.min ? Number(this.dataThing.min) : undefined;
-          this.dataThing.rate = this.dataThing.rate ? Number(this.dataThing.rate) : undefined;
-          this.dataThing.offset = this.dataThing.offset ? Number(this.dataThing.offset) : undefined;
+          this.dataThing.rate = this.dataThing.rate !== undefined && this.dataThing.rate !== null && this.dataThing.rate !== "" ? Number(this.dataThing.rate) : undefined;
+          this.dataThing.offset = this.dataThing.offset !== undefined && this.dataThing.offset !== null && this.dataThing.offset !== "" ? Number(this.dataThing.offset) : undefined;
           this.dataThing.precision = this.dataThing.precision ? Number(this.dataThing.precision) : undefined;
           let arr = this.tabThing.filter((i) => {
             return name === i.name;
@@ -272,6 +266,24 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+.property-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  > .el-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.property-icon-button {
+  width: 40px;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 16px;
+}
+
 .thing-label {
   font-weight: bold;
   margin: 10px;

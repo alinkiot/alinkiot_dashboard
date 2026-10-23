@@ -10,6 +10,14 @@
         />
       </el-select>
     </el-form-item>
+    <template v-if="isBasicFormula">
+      <el-form-item label="倍率" prop="rate">
+        <el-input v-model="dataThing.rate" placeholder="倍率"/>
+      </el-form-item>
+      <el-form-item label="偏移量" prop="offset">
+        <el-input type="number" v-model="dataThing.offset" placeholder="偏移量"/>
+      </el-form-item>
+    </template>
     <el-form-item label="公式说明" prop="formula">
       <div v-html="get_formula_desc()"></div>
     </el-form-item>
@@ -36,6 +44,11 @@ export default {
         name: undefined
       }
     };
+  },
+  computed: {
+    isBasicFormula() {
+      return this.formula.name === "base_formula";
+    }
   },
   created() {
 
