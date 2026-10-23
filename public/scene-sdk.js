@@ -1,15 +1,21 @@
 /**
- * SceneSDK 1.1.0 — 场景自定义 HTML 数据 SDK（供页面作者及 AI 生成页面使用）。
+ * SceneSDK 1.1.0 — 场景及产品自定义 HTML 面板 SDK（供页面作者及 AI 使用）。
  *
  * 【接入】
  * 1. 在 HTML 的业务脚本之前手动引入本文件，不使用 import，也不需要注册。
  *    同域：<script src="/scene-sdk.js?v=1.1.0"></script>
  *    跨域：将 src 改为 Dashboard 的完整地址，而不是上传文件服务器的地址。
- * 2. HTML 必须在 Dashboard 场景的 iframe 中运行。单独打开 HTML 无法调用父页面接口。
+ * 2. HTML 必须在 Dashboard 场景或设备详情的 HTML 面板 iframe 中运行。
+ *    单独打开 HTML 无法调用父页面接口。建议在 window 的 load 事件后初始化数据和订阅。
  * 3. 父页面负责登录鉴权、后端请求和 MQTT；不要在 HTML 中填写 token 或 MQTT 凭据。
  *    本 SDK 不会自动注入 HTML，也不提供设备控制/写入方法。
  *
  * 【AI 生成页面时的数据规则】
+ * - 场景模式可访问当前场景设备；产品面板模式只可访问设备详情当前设备。
+ *   产品面板在 iot_product_mgr 字典中选择“多媒体-文件”上传 HTML，产品仅需选择该项；
+ *   同一 HTML 可供多个产品/设备复用，不要把设备 ID 写死在 HTML 中。
+ *   两种模式使用相同 API：产品面板 getDevices() 的 total 为 1，第一页只有当前设备，
+ *   后续页为空；传其他设备 ID 的查询或订阅会被拒绝，不要求当前设备关联场景。
  * - 先 getDevices() 获取当前场景设备；后续传 device.id，不是 device.addr 或产品 ID。
  * - 按产品物模型 product.thing 渲染：name 是数据键，title 是显示名称，unit 是单位；
  *   access 为 "read" 或 "rw" 的属性用于当前状态展示。不要猜测/写死位移字段和单位。
@@ -145,7 +151,8 @@
     /** @type {string} SDK 版本；用于排查错误地址或浏览器旧缓存。 */
     version: "1.1.0",
     /**
-     * 分页获取当前场景设备，并附带在线状态及最新采集记录。
+     * 分页获取授权范围内设备，并附带在线状态及最新采集记录。
+     * 产品面板模式仅返回当前设备，total 为 1；场景模式返回当前场景设备。
      * total 是场景设备总数，rows 仅为当前页；设备较多时需继续分页。
      * @param {Object} [options]
      * @param {number} [options.pageNum=1] 页码，从 1 开始。

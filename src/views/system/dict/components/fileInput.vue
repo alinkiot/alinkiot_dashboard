@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-form-item label="选择文件" prop="dictValue">
-      <FileUpload :limit=1 @input="handleFile" :value="form.dictValue" />
+      <FileUpload :limit=1 :fileType="fileTypes" @input="handleFile" :value="form.dictValue" />
     </el-form-item>
   </div>
 </template>
@@ -21,6 +21,12 @@ export default {
     return {
 
     };
+  },
+  computed: {
+    fileTypes() {
+      const types = ["doc", "xls", "ppt", "txt", "pdf", "csv"];
+      return this.form.dictType === "iot_product_mgr" ? types.concat(["html", "htm"]) : types;
+    }
   },
   created() {
 

@@ -151,9 +151,9 @@ export default {
       }
     },
     'dict.type.iot_product_mgr': {
-      handler(options) {
-        if (!this.product && this.isEmptyCategory() && options && options.length) {
-          this.form.category = options[0].value;
+      handler() {
+        if (!this.product) {
+          this.setDefaultCategory();
         }
       }
     }
@@ -192,8 +192,9 @@ export default {
     },
     setDefaultCategory() {
       const options = this.dict.type.iot_product_mgr;
-      if (this.isEmptyCategory() && options && options.length) {
-        this.form.category = options[0].value;
+      const defaultPanel = options && options.find(item => item.value === 'default');
+      if (this.isEmptyCategory() && defaultPanel) {
+        this.$set(this.form, 'category', defaultPanel.value);
       }
     },
     reset() {

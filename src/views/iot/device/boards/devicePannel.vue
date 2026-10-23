@@ -1,32 +1,39 @@
 <template>
   <div v-loading="loading">
-    <CameraBox
+    <SceneHtml
+      v-if="product && product.category !== 'default' && htmlPanel && device"
+      :key="device.id + ':' + htmlPanel"
       :device="device"
-      :data="devData"
-      :env="env"
-      v-if="product && product.category === 'ezviz'"/>
+      :html-path="htmlPanel"
+      :realtime-data="recvData"
+    />
     <DefaultBox
+      v-else-if="product && product.category === 'default'"
       :device="device"
       :data="devData"
       :env="env"
       :protocol="protocol"
       :showImport="showImport && !!(product && product.supportImport)"
-      @sendData="sendData"
-      v-else/>
+      @sendData="sendData"/>
+    <el-empty
+      v-else-if="!loading"
+      description="当前产品面板未定义，请将产品面板切换为通用面板（default），或在产品面板字典（iot_product_mgr）中上传并选择对应的 HTML 面板。"
+    />
   </div>
 </template>
 <script>
 
 import {getDevHisLast, getObject} from "@/api/iot/table";
 import { deviceControl } from "@/api/iot/system";
-import CameraBox from "../boards/ezvizCameraBox.vue";
 import DefaultBox from "../boards/defaultBox.vue";
+import SceneHtml from "@/views/iot/scene/components/sceneHtml.vue";
 
 
 export default {
+  dicts: ['iot_product_mgr'],
   components: {
-    DefaultBox,
-    CameraBox
+    SceneHtml,
+    DefaultBox
   },
   props: {
     devId: {
@@ -53,6 +60,15 @@ export default {
       product : undefined,
       devData: undefined
     };
+  },
+  computed: {
+    htmlPanel() {
+      if (!this.product) return "";
+      const panel = this.dict.type.iot_product_mgr.find(item =>
+        item.value === this.product.category && item.raw && item.raw.listClass === "file"
+      );
+      return panel && /\.html?(?:[?#]|$)/i.test(panel.value) ? panel.value : "";
+    }
   },
   created() {
     this.queryDevice();

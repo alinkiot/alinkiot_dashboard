@@ -1,7 +1,7 @@
 <template>
   <div v-loading="loading" class="html-root">
     <MqttBoard
-      v-if="mqttSubscriptions.length"
+      v-if="!device && mqttSubscriptions.length"
       :subscription="mqttSubscriptions"
       @doMqttMessage="handleMqttMessage"
     />
@@ -94,11 +94,23 @@ export default {
   props: {
     scene: {
       type: Object,
-      required: true
+      default: null
     },
     scene_key: {
       type: String,
-      required: true
+      default: ""
+    },
+    device: {
+      type: Object,
+      default: null
+    },
+    htmlPath: {
+      type: String,
+      default: ""
+    },
+    realtimeData: {
+      type: Object,
+      default: null
     },
     edit: {
       type: Boolean,
@@ -118,7 +130,7 @@ export default {
   computed: {
     // 将存储的相对路径解析为可嵌入的完整地址
     src() {
-      const path = this.form && this.form.path;
+      const path = this.device ? this.htmlPath : this.form && this.form.path;
       if (!path) {
         return "";
       }
@@ -152,6 +164,7 @@ export default {
     getSceneData() {
       this.realtimeSubscribers = {};
       this.updateMqttSubscriptions();
+      if (this.device || !this.scene) return;
       const query = {
         scene: this.scene.id,
         sceneType: this.scene_key
@@ -221,6 +234,18 @@ export default {
       }, "*");
     },
     async getSceneDevices(options) {
+      if (this.device) {
+        const pageNum = Math.max(Number(options.pageNum) || 1, 1);
+        const status = await this.getSceneDeviceStatus(this.device.id);
+        return {
+          total: 1,
+          rows: pageNum === 1 ? [{
+            ...status.device,
+            onlineStatus: status.onlineStatus,
+            latestData: status.latestData
+          }] : []
+        };
+      }
       const pageNum = Math.max(Number(options.pageNum) || 1, 1);
       const pageSize = Math.min(Math.max(Number(options.pageSize) || 100, 1), 1000);
       const response = await queryDevByScene({
@@ -281,7 +306,8 @@ export default {
       if (!device.product) {
         return { device, product: null };
       }
-      const response = await getObject("product", device.product);
+      const productId = typeof device.product === "object" ? device.product.id : device.product;
+      const response = await getObject("product", productId);
       const product = response.data;
       const parseArray = (value, field) => {
         if (!value) return [];
@@ -339,6 +365,17 @@ export default {
     async getSceneDevice(deviceId) {
       if (deviceId === undefined || deviceId === null || deviceId === "") {
         throw new Error("设备 ID 不能为空");
+      }
+      if (this.device) {
+        if (String(deviceId) !== String(this.device.id)) {
+          throw new Error("仅允许访问当前设备");
+        }
+        return {
+          ...this.device,
+          product: this.device.product && typeof this.device.product === "object"
+            ? this.device.product.id
+            : this.device.product
+        };
       }
       const response = await getObject("device", deviceId);
       const device = response.data;
@@ -449,6 +486,11 @@ export default {
     }
   },
   watch: {
+    realtimeData(data) {
+      if (this.device && data) {
+        this.handleMqttMessage("p/out/" + this.device.addr, JSON.stringify(data));
+      }
+    },
     scene() {
       this.getSceneData();
     },
