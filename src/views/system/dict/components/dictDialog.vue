@@ -8,7 +8,7 @@
         <el-form-item label="数据标签" prop="dictLabel">
           <el-input v-model="form.dictLabel" placeholder="请输入数据标签" />
         </el-form-item>
-        <el-form-item label="显示样式" prop="listClass">
+        <el-form-item v-if="dictType !== 'iot_product_mgr' && dictType !== 'iot_product_thing' && dictType !== 'iot_protocol_id'" label="显示样式" prop="listClass">
           <el-select v-model="form.listClass">
             <el-option
               v-for="item in listClassOptions"
@@ -76,6 +76,7 @@ import { getData, addData, updateData } from "@/api/system/dict/data";
 import ImageInput from "@/views/system/dict/components/imageInput.vue";
 import FileInput from "@/views/system/dict/components/fileInput.vue";
 import IconSelect from "@/components/IconSelect/index.vue";
+import { isMediaDict, parseMediaDict } from "@/utils/dict/media";
 
 export default {
   components: {IconSelect, FileInput, ImageInput},
@@ -151,7 +152,19 @@ export default {
           { required: true, message: "数据标签不能为空", trigger: "blur" }
         ],
         dictValue: [
-          { required: true, message: "数据键值不能为空", trigger: "blur" }
+          { required: true, message: "数据键值不能为空", trigger: "blur" },
+          { validator: (rule, value, callback) => {
+            if (!isMediaDict(this.form)) return callback();
+            try {
+              const media = parseMediaDict(this.form);
+              if (!media.value.trim() || !media.path.trim()) {
+                return callback(new Error("请填写固定数据键值并上传文件"));
+              }
+              callback();
+            } catch (error) {
+              callback(error);
+            }
+          }, trigger: "change" }
         ],
         dictSort: [
           { required: true, message: "数据顺序不能为空", trigger: "blur" }
@@ -198,6 +211,9 @@ export default {
     submitForm: function() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          if (isMediaDict(this.form)) {
+            this.form.dictValue = JSON.stringify(parseMediaDict(this.form));
+          }
           if (this.form.dictCode != undefined) {
             updateData(this.form).then(response => {
               this.$store.dispatch('dict/removeDict', this.dictCategory.dictType);
@@ -224,6 +240,7 @@ export default {
         getData(this.dictCode).then(response => {
           this.loadInfo = false;
           this.form = response.data;
+          this.normalizePanelStyle();
           this.title = "修改字典数据";
         });
       }else{
@@ -239,17 +256,27 @@ export default {
     // 表单重置
     reset() {
       this.form = {
-        dictType: this.dictCategory.dictType,
+        dictType: this.dictType,
         dictCode: this.default.dictCode,
         dictLabel: this.default.dictLabel,
         dictValue: this.default.dictValue,
         cssClass: this.default.cssClass,
-        listClass: this.dictCategory.dictType === 'iot_product_thing'? 'code':'default',
+        listClass: this.dictType === 'iot_product_thing'? 'code':'default',
         dictSort: 0,
         status: "0",
         remark: this.default.remark
       };
+      this.normalizePanelStyle();
       this.resetForm("form");
+    },
+    normalizePanelStyle() {
+      if (this.dictType === "iot_protocol_id") {
+        this.form.listClass = "default";
+      } else if (this.dictType === "iot_product_thing") {
+        this.form.listClass = "code";
+      } else if (this.dictType === "iot_product_mgr") {
+        this.form.listClass = this.form.dictValue === "default" ? "default" : "file";
+      }
     }
   },
   watch: {

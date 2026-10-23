@@ -1,37 +1,13 @@
 <template>
-  <div>
-    <el-form-item label="选择相册" prop="dictValue">
-      <ImageUpload :limit=1 @input="handleFile" :value="form.dictValue" />
-    </el-form-item>
-  </div>
+  <FileInput :form="form" />
 </template>
 <script>
-
-import ImageUpload from "@/components/ImageUpload/index.vue";
+import FileInput from "./fileInput.vue";
 
 export default {
-  components: { ImageUpload },
+  components: { FileInput },
   props: {
-    form: {
-      type: Object,
-      require: true
-    }
-  },
-  data() {
-    return {
-
-    };
-  },
-  created() {
-
-  },
-  methods: {
-    handleFile(path){
-      this.form.dictValue = path;
-    }
+    form: { type: Object, required: true }
   }
 };
 </script>
-<style lang="scss" scoped>
-
-</style>

@@ -1,10 +1,19 @@
 import DictOptions from './DictOptions'
 import DictData from './DictData'
+import { isMediaDict, parseMediaDict } from './media'
 
 export default function(dict, dictMeta) {
   const label = determineDictField(dict, dictMeta.labelField, ...DictOptions.DEFAULT_LABEL_FIELDS)
   const value = determineDictField(dict, dictMeta.valueField, ...DictOptions.DEFAULT_VALUE_FIELDS)
-  return new DictData(dict[label], dict[value], dict)
+  let optionValue = dict[value]
+  if (isMediaDict(dict)) {
+    try {
+      optionValue = parseMediaDict(dict).value
+    } catch (error) {
+      console.error('多媒体字典格式无效', dict.dictCode, error)
+    }
+  }
+  return new DictData(dict[label], optionValue, dict)
 }
 
 /**

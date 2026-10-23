@@ -27,6 +27,7 @@ import {getDevHisLast, getObject} from "@/api/iot/table";
 import { deviceControl } from "@/api/iot/system";
 import DefaultBox from "../boards/defaultBox.vue";
 import SceneHtml from "@/views/iot/scene/components/sceneHtml.vue";
+import { parseMediaDict } from "@/utils/dict/media";
 
 
 export default {
@@ -67,7 +68,14 @@ export default {
       const panel = this.dict.type.iot_product_mgr.find(item =>
         item.value === this.product.category && item.raw && item.raw.listClass === "file"
       );
-      return panel && /\.html?(?:[?#]|$)/i.test(panel.value) ? panel.value : "";
+      if (!panel) return "";
+      try {
+        const media = parseMediaDict(panel.raw);
+        return media.type === "html" ? media.path : "";
+      } catch (error) {
+        console.error("产品面板字典格式无效", error);
+        return "";
+      }
     }
   },
   created() {

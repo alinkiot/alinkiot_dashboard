@@ -13,6 +13,9 @@
  * 【AI 生成页面时的数据规则】
  * - 场景模式可访问当前场景设备；产品面板模式只可访问设备详情当前设备。
  *   产品面板在 iot_product_mgr 字典中选择“多媒体-文件”上传 HTML，产品仅需选择该项；
+ *   字典 dictValue 保存 JSON，例如：
+ *   {"type":"html","value":"dji_drone","path":"/upload/drone.html"}。
+ *   产品 category 只保存固定标识 dji_drone；替换 path 不影响产品关联。
  *   同一 HTML 可供多个产品/设备复用，不要把设备 ID 写死在 HTML 中。
  *   两种模式使用相同 API：产品面板 getDevices() 的 total 为 1，第一页只有当前设备，
  *   后续页为空；传其他设备 ID 的查询或订阅会被拒绝，不要求当前设备关联场景。
