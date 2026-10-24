@@ -71,8 +71,13 @@
           <el-col :span="12" v-if="form.menuType !== 'F'">
             <el-form-item prop="path">
               <span slot="label">
-                <el-tooltip content="访问的路由地址，如：`user`，如外网地址需内链访问则以`http(s)://`开头" placement="top">
-                <i class="el-icon-question"></i>
+                <el-tooltip placement="top">
+                  <div slot="content">
+                    绝对路径：以 / 开头<br>
+                    相对路径：会以父菜单路径拼接<br>
+                    外链：以 http(s):// 开头
+                  </div>
+                  <i class="el-icon-question"></i>
                 </el-tooltip>
                 路由地址
               </span>
@@ -129,8 +134,13 @@
           <el-col :span="12" v-if="form.menuType !== 'F'">
             <el-form-item>
               <span slot="label">
-                <el-tooltip content="选择隐藏则路由将不会出现在侧边栏，但仍然可以访问" placement="top">
-                <i class="el-icon-question"></i>
+                <el-tooltip placement="top">
+                  <div slot="content">
+                    选择隐藏则路由不会出现在侧边栏，但仍然可以访问。<br>
+                    隐藏的详情/跳转页建议路由地址使用 <code>/</code> 开头的绝对路径，<br>
+                    避免受父级菜单结构变化影响。
+                  </div>
+                  <i class="el-icon-question"></i>
                 </el-tooltip>
                 显示状态
               </span>
@@ -210,7 +220,7 @@ export default {
           { required: true, message: "菜单顺序不能为空", trigger: "blur" }
         ],
         path: [
-          { self: this, validator: checkRegx, required: true,  message: "路由地址不能为空,肯为a-zA-Z0-9", trigger: "blur" }
+          { self: this, validator: checkRegx, required: true,  message: "路由地址不能为空，只能包含字母、数字、-、_、/", trigger: "blur" }
         ]
       }
     };

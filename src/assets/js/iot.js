@@ -83,7 +83,7 @@ export function validateCheck(rule, value, callback){
 
 export function checkRegx(rule, value, callback){
   const field = rule.fullField;
-  const reg = /[^a-zA-Z0-9]/;
+  const reg = /[^a-zA-Z0-9\-_/]/;
   if(value === undefined || reg.test(value)){
     return callback(new Error(field.message));
   }else{
