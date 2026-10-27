@@ -221,15 +221,19 @@ export default {
       const query = JSON.parse(JSON.stringify(this.queryParams));
       delete query['device'];
       if(this.select === 'addr'){
-        query['addr[like]'] = this.queryParams.device;
+        if(this.queryParams.device) query['addr[like]'] = this.queryParams.device;
       }else{
-        query['name[like]'] = this.queryParams.device;
+        if(this.queryParams.device) query['name[like]'] = this.queryParams.device;
       }
       if(this.nodeType.length > 0){
         query['nodeType'] = this.nodeType.join(',');
       }
-      query['project'] = this.project.id;
-      query['product'] = this.product.id;
+      if(this.project.id){
+        query['project'] = this.project.id;
+      }
+      if(this.product.id){
+        query['product'] = this.product.id;
+      }
       this.deviceQuery = query;
       this.menuQuery = query;
       this.componentPath = 'iot/device/index';

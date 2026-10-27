@@ -13,7 +13,7 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="菜单类型" prop="menuType">
               <el-radio-group v-model="form.menuType">
                 <el-radio label="M">目录</el-radio>
@@ -22,7 +22,24 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="24" v-if="form.menuType !== 'F'">
+          <el-col :span="12" v-if="form.menuType !== 'F'">
+            <el-form-item>
+              <span slot="label">
+                <el-tooltip content="勾选后顶部快捷菜单显示" placement="top">
+                <i class="el-icon-question"></i>
+                </el-tooltip>
+                快捷菜单
+              </span>
+              <el-checkbox v-model="form.isTop" true-label="1" false-label="0" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-else />
+          <el-col :span="24">
+            <el-form-item label="菜单名称" prop="menuName">
+              <el-input v-model="form.menuName" placeholder="请输入菜单名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12" v-if="form.menuType !== 'F'">
             <el-form-item label="菜单图标" prop="icon">
               <el-popover
                 placement="bottom-start"
@@ -44,11 +61,7 @@
               </el-popover>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="菜单名称" prop="menuName">
-              <el-input v-model="form.menuName" placeholder="请输入菜单名称" />
-            </el-form-item>
-          </el-col>
+          <el-col :span="12" v-else />
           <el-col :span="12">
             <el-form-item label="显示排序" prop="orderNum">
               <el-input-number style="width: 100%" v-model="form.orderNum" :min="0" />
@@ -170,6 +183,7 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
+
         </el-row>
         <el-row style=" padding-bottom: 10px; text-align: right;">
           <el-button type="primary" @click="submitForm">保  存</el-button>
@@ -269,7 +283,7 @@ export default {
       if(this.menu){
         for(let i in this.form){
           const value = this.menu[i];
-          if(value && value !==''){
+          if(value !== undefined && value !== null && value !== ''){
             if(i === 'query' && typeof(value) !== 'string'){
               this.form[i] = JSON.stringify(value);
             }else{
@@ -294,7 +308,8 @@ export default {
         menuType: 'M',
         component: undefined,
         path: undefined,
-        query: undefined
+        query: undefined,
+        isTop: "0"
       };
       this.resetForm("form");
     },
@@ -322,7 +337,6 @@ export default {
     },
     menu: {
       handler(){
-        console.log('change', this.menu);
         this.setMenu();
       },
       immediate: true,

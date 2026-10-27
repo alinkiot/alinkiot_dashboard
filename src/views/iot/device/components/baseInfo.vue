@@ -204,6 +204,7 @@ export default {
       });
     },
     load() {
+      if(!this.id) return;
       this.loading = true;
       getObject('device', this.id).then(response => {
         const device = response.data;

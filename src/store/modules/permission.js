@@ -122,6 +122,13 @@ function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
         route.component = loadView(route.component)
       }
     }
+    // 将 isTop 映射到 meta 中
+    if (route.isTop !== undefined) {
+      if (!route.meta) {
+        route.meta = {}
+      }
+      route.meta.isTop = route.isTop
+    }
     if (route.children != null && route.children && route.children.length) {
       route.children = filterAsyncRouter(route.children, route, type)
     } else {

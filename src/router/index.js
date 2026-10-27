@@ -71,6 +71,32 @@ export const constantRoutes = [
     component: () => import("@/views/dashboard/components/DataScreen"),
     hidden: true,
   },
+  {
+    path: "/:project?/device/deviceEdit",
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: "",
+        component: () => import("@/views/iot/device/edit"),
+        name: "DeviceEdit",
+        meta: { title: "设备详情", activeMenu: "/device/deviceIndex" },
+      },
+    ],
+  },
+  {
+    path: "/:project?/device/productEdit",
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: "",
+        component: () => import("@/views/iot/product/edit"),
+        name: "ProductEdit",
+        meta: { title: "产品详情", activeMenu: "/product/productIndex" },
+      },
+    ],
+  },
 ];
 
 // 动态路由，基于用户权限动态去加载

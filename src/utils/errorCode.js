@@ -14,9 +14,9 @@ export function formatError(res, msg) {
     } else if (msg.match(/Duplicate entry '(.+)' for key '(.+)'/)) {
         const fields = msg.match(/Duplicate entry '(.+)' for key '(.+)'/);
         return '数据库已经存在 ' + fields[1] + '！';
-    } else if (msg.match(/Unknown column '(.+)'/g)) {
-      const fields = msg.match(/Unknown column '(.+)'/g);
-      return '未知字段' + fields[1] + '!';
+    } else if (msg.match(/Unknown column '(.+)'/)) {
+      const fields = msg.match(/Unknown column '(.+)'/);
+      return '未知字段 ' + fields[1] + '!';
     } else if (msg.match(/access_token not found/g)) {
         return '微信接口禁止访问！';
     } else if (msg.match(/function_clause/g)) {

@@ -49,13 +49,12 @@ export default {
     // 顶部显示菜单
     topMenus() {
       let topMenus = [];
-      this.routers.map((menu) => {
-        if (menu.hidden !== true) {
-          // 兼容顶部栏一级菜单内部跳转
+      this.routers.forEach((menu) => {
+        if (menu.hidden !== true && menu.meta && menu.meta.isTop === '1') {
           if (menu.path === "/") {
-              topMenus.push(menu.children[0]);
+            topMenus.push(menu.children[0]);
           } else {
-              topMenus.push(menu);
+            topMenus.push(menu);
           }
         }
       });

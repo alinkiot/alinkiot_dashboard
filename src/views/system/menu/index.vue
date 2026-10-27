@@ -103,7 +103,7 @@
     </el-table>
 
     <!-- 添加或修改菜单对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="680px" >
+    <el-dialog :title="title" :visible.sync="open" width="680px" :lock-scroll="false">
       <MenuFrom :menu="menu" :parentId="menuParentId" @submit="submit" />
     </el-dialog>
   </div>

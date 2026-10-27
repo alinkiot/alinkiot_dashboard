@@ -48,6 +48,10 @@
               </div>
               <div v-else class="spotlight-empty">未找到相关菜单</div>
             </div>
+            <!-- 底部提示 -->
+            <div class="spotlight-footer">
+              可在「系统管理 → 菜单管理」编辑菜单时开启快捷菜单
+            </div>
           </div>
         </transition>
       </div>
@@ -83,9 +87,27 @@ export default {
     routes() {
       return this.$store.getters.permission_routes
     },
-    // 无输入时展示的快捷菜单
+    // 无输入时展示的快捷菜单：递归收集所有 isTop === '1' 的路由节点
     quickList() {
-      return this.searchPool.slice(0, QUICK_LIMIT)
+      const collect = (routes, basePath = '/') => {
+        let res = []
+        for (const r of routes) {
+          if (r.hidden) continue
+          const fullPath = !this.ishttp(r.path) ? path.resolve(basePath, r.path) : r.path
+          if (r.meta && r.meta.isTop === '1') {
+            res.push({
+              path: fullPath,
+              title: r.meta.title ? [r.meta.title] : [],
+              icon: (r.meta && r.meta.icon) || ''
+            })
+          }
+          if (r.children) {
+            res = res.concat(collect(r.children, fullPath))
+          }
+        }
+        return res
+      }
+      return collect(this.routes).slice(0, QUICK_LIMIT)
     },
     // 当前展示的列表（搜索结果或快捷菜单）
     list() {
@@ -406,6 +428,14 @@ export default {
   }
 }
 
+.spotlight-footer {
+  padding: 10px 18px;
+  font-size: 12px;
+  color: #b0b0b5;
+  text-align: center;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
 /* ============================================================
    深色主题适配（.theme-dark 深空黑 / .theme-dark-blue 午夜蓝 / .theme-green 森林）
    面板为 fixed 定位且位于组件内，是 body 的后代，可用祖先选择器命中
@@ -474,6 +504,15 @@ export default {
     .spotlight-empty {
       color: rgba(255, 255, 255, 0.35);
     }
+  }
+}
+
+.theme-dark,
+.theme-dark-blue,
+.theme-green {
+  .spotlight-footer {
+    border-top-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.3);
   }
 }
 

@@ -190,7 +190,9 @@ export default {
         pageSize: this.queryParams.pageSize,
         status: this.queryParams.status
       }
-      queryParams['name[like]'] = this.queryParams.name;
+      if(this.queryParams.name) {
+        queryParams['name[like]'] = this.queryParams.name;
+      }
       queryObject(this.table, queryParams).then(response => {
         const rows = response.rows;
         const total = response.total;
