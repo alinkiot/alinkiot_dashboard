@@ -361,6 +361,7 @@ export default {
         // 从而出现“接口有数据却仍提示未配置”的问题。
         location.href = '/' + toProject(project.name) + '/index';
       }
+    },
     handleDeleteClick() {
       if (!this.selectionMode) {
         this.selectionMode = true;
