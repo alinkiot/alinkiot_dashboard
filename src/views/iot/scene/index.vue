@@ -39,16 +39,39 @@
           <span>项目</span>
           <span class="scene-project-count">{{ projectList.length }}</span>
         </div>
-        <el-menu :default-active="activeProjectKey" @select="handleProjectSelect">
-          <el-menu-item
+        <el-menu :default-active="activeProjectKey" :default-openeds="defaultOpenedProjects" unique-opened @select="handleProjectSelect" @open="handleProjectOpen">
+          <el-submenu
             v-for="item in projectList"
-            :key="item.id"
+            :key="String(item.id)"
             :index="String(item.id)"
-            class="scene-project-item"
+            class="scene-project-submenu"
           >
-            <i class="el-icon-folder"></i>
-            <span slot="title" class="scene-project-name">{{ item.title }}</span>
-          </el-menu-item>
+            <template slot="title">
+              <i class="el-icon-folder"></i>
+              <span class="scene-project-name">{{ item.title }}</span>
+            </template>
+            <el-menu-item v-if="loadingProjects[item.id]" :index="'loading-' + item.id" disabled class="scene-submenu-tip">
+              <i class="el-icon-loading"></i> 加载中...
+            </el-menu-item>
+            <template v-else-if="scenesMap[item.id] && scenesMap[item.id].length">
+              <el-menu-item
+                v-for="scene in scenesMap[item.id]"
+                :key="'scene-' + scene.id"
+                :index="'scene-' + scene.id"
+                class="scene-project-item"
+                @click.native="openScenePreview(scene)"
+              >
+                <i v-if="scene.icon" class="scene-item-icon">
+                  <svg-icon :icon-class="scene.icon"/>
+                </i>
+                <i v-else class="el-icon-monitor"></i>
+                <span slot="title" class="scene-project-name">{{ scene.title }}</span>
+              </el-menu-item>
+            </template>
+            <el-menu-item v-else-if="scenesMap[item.id]" :index="'empty-' + item.id" disabled class="scene-submenu-tip">
+              暂无场景
+            </el-menu-item>
+          </el-submenu>
         </el-menu>
       </aside>
       <div v-loading="loading" class="scene-content">
@@ -295,6 +318,9 @@ export default {
       scene: { },
       project: {},
       projectList: [],
+      scenesMap: {},
+      loadingProjects: {},
+      defaultOpenedProjects: [],
       previewVisible: false,
       previewSceneId: undefined,
       previewSceneTitle: '',
@@ -362,8 +388,9 @@ export default {
         this.projectList = projects;
         if (!this.project.id && projects.length) {
           this.project = projects[0];
+          this.defaultOpenedProjects = [String(projects[0].id)];
           this.queryParams.pageNum = 1;
-          this.getList();
+          this.getList(); // getList 成功后会同步 scenesMap，第一个项目不需要额外加载
         }
       });
       loadPage(1).catch(() => {
@@ -391,6 +418,10 @@ export default {
         this.tableList = response.rows || [];
         this.total = response.total || 0;
         this.loading = false;
+        // 同步更新左侧树对应项目的场景列表
+        if (this.project.id) {
+          this.$set(this.scenesMap, String(this.project.id), this.tableList);
+        }
       }).catch(() => {
         this.loading = false;
         this.tableList = [];
@@ -519,10 +550,31 @@ export default {
     editProjectDone(project) {
       this.scene.project = project.id;
     },
-    handleProjectSelect(projectId) {
-      this.project = this.projectList.find(item => String(item.id) === projectId) || {};
-      this.queryParams.pageNum = 1;
-      this.getList();
+    handleProjectSelect(index) {
+      // 只响应项目级别的 select（场景用 click.native 处理，不走 select）
+      if (index.startsWith('scene-')) return;
+    },
+    handleProjectOpen(index) {
+      // el-submenu 展开时：切换右侧内容 + 懒加载该项目场景
+      if (index.startsWith('scene-')) return;
+      const projectId = index;
+      // 切换右侧展示的项目
+      const target = this.projectList.find(item => String(item.id) === projectId);
+      if (target) {
+        this.project = target;
+        this.queryParams.pageNum = 1;
+        this.getList();
+      }
+      // 已加载过则不重复请求
+      if (this.scenesMap[projectId] !== undefined) return;
+      this.$set(this.loadingProjects, projectId, true);
+      queryObject('scene', { pageNum: 1, pageSize: 200, project: projectId }).then(response => {
+        this.$set(this.scenesMap, projectId, response.rows || []);
+      }).catch(() => {
+        this.$set(this.scenesMap, projectId, []);
+      }).finally(() => {
+        this.$set(this.loadingProjects, projectId, false);
+      });
     }
   }
 };
@@ -610,6 +662,65 @@ export default {
 
   ::v-deep .el-menu-item.scene-project-item.is-active > i {
     color: currentColor;
+  }
+
+  // 项目 submenu 标题行
+  ::v-deep .el-submenu.scene-project-submenu > .el-submenu__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    margin: 2px 0;
+    padding: 0 12px !important;
+    border-radius: 6px;
+    line-height: 44px;
+    font-size: 13px;
+
+    > i.el-icon-folder {
+      color: #909399;
+      font-size: 16px;
+    }
+
+    .scene-project-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &:hover {
+      background-color: rgba(127, 127, 127, 0.08);
+    }
+  }
+
+  // 场景条目（submenu 内的 menu-item）缩进
+  ::v-deep .el-submenu.scene-project-submenu .el-menu-item.scene-project-item {
+    padding-left: 32px !important;
+    height: 38px;
+    line-height: 38px;
+    font-size: 12px;
+
+    .scene-item-icon {
+      font-style: normal;
+      font-size: 15px;
+      flex: 0 0 18px;
+    }
+  }
+
+  ::v-deep .el-menu-item.scene-submenu-tip {
+    padding-left: 32px !important;
+    height: 32px;
+    line-height: 32px;
+    font-size: 12px;
+    color: #c0c4cc !important;
+    cursor: default;
+  }
+
+  .scene-submenu-loading,
+  .scene-submenu-empty {
+    padding: 8px 32px;
+    font-size: 12px;
+    color: #c0c4cc;
   }
 }
 
