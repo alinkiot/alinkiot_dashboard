@@ -146,14 +146,16 @@ const mutations = {
 const actions = {
   // 获取站点信息
   SiteInfo({ commit }, project) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       state.project = getProject(project);
       siteInfo(project).then(res => {
         const site_info = res.data
         commit('SET_SITE', site_info)
         resolve(site_info)
-      }).catch(error => {
-        reject(error)
+      }).catch(() => {
+        // 站点配置不存在（404）或请求失败，不阻断页面加载，当作空配置处理
+        commit('SET_SITE', {})
+        resolve({})
       })
     });
   },
