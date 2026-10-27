@@ -706,7 +706,7 @@ export default {
     height: 32px;
     line-height: 32px;
     font-size: 12px;
-    color: #c0c4cc !important;
+    color: #909399 !important;
     cursor: default;
   }
 
