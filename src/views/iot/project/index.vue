@@ -158,7 +158,6 @@
 import { queryObject, getObject, delObject, createObject, updateObject } from "@/api/iot/table";
 import { checkPermi } from "@/utils/permission";
 import {toProject, getProject} from "@/api/iot/system";
-import { siteInfo } from "@/api/login";
 import {validate2Check} from "@/assets/js/iot";
 export default {
   name: "Project",
@@ -360,40 +359,8 @@ export default {
         // 注意：不能用 listConfig，因为 request 拦截器会把当前激活项目写入
         // project 请求头，导致查询的是“当前项目”而非被点击项目的配置，
         // 从而出现“接口有数据却仍提示未配置”的问题。
-        siteInfo(toProject(project.name)).then(response => {
-          const data = response && response.data;
-          const hasSite = data && (typeof data !== 'object' || Object.keys(data).length > 0);
-          if(hasSite){
-            location.href = '/' + toProject(project.name) + '/index';
-          }else{
-            this.promptSiteConfig(project);
-          }
-        }).catch(() => {
-          // 查询失败按未配置处理，引导用户前往配置
-          this.promptSiteConfig(project);
-        });
+        location.href = '/' + toProject(project.name) + '/index';
       }
-    },
-    promptSiteConfig(project) {
-      this.$confirm('该项目尚未创建站点配置，请先前往配置站点信息。', '提示', {
-        confirmButtonText: '前往配置',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        const routeProject = this.$route.params.project;
-        if(routeProject){
-          this.$router.push({
-            path: '/' + routeProject + '/project/config',
-            query: { projectId: project.id, configKey: 'site_info' }
-          });
-        }else{
-          this.$router.push({
-            path: '/project/config',
-            query: { projectId: project.id, configKey: 'site_info' }
-          });
-        }
-      }).catch(() => {});
-    },
     handleDeleteClick() {
       if (!this.selectionMode) {
         this.selectionMode = true;
