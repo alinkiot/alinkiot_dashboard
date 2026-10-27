@@ -78,7 +78,6 @@
         <template v-if="selectedScene">
           <div class="scene-content-header">
             <div style="display:flex;align-items:center;gap:10px;">
-              <el-button size="mini" icon="el-icon-arrow-left" @click="selectedScene = null">返回</el-button>
               <h2>{{ selectedScene.title }}</h2>
             </div>
             <div class="scene-header-actions">
@@ -540,16 +539,12 @@ export default {
       // 场景 tip 条目（loading/empty）不做任何处理
     },
     handleProjectTitleClick(item) {
-      // 点击项目标题：切换右侧列表（无论展开还是收起都响应）
-      if (this.project.id === item.id) {
-        // 已是当前项目，只需清掉选中的场景，回到列表
-        this.selectedScene = null;
-        return;
-      }
-      this.project = item;
       this.selectedScene = null;
-      this.queryParams.pageNum = 1;
-      this.getList();
+      if (this.project.id !== item.id) {
+        this.project = item;
+        this.queryParams.pageNum = 1;
+        this.getList();
+      }
     },
     handleProjectOpen(index) {
       // el-submenu 展开时：懒加载该项目场景（切换右侧在 handleProjectTitleClick 里处理）
