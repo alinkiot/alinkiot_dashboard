@@ -39,7 +39,7 @@
           <span>项目</span>
           <span class="scene-project-count">{{ projectList.length }}</span>
         </div>
-        <el-menu :default-active="activeProjectKey" :default-openeds="defaultOpenedProjects" unique-opened @select="handleProjectSelect" @open="handleProjectOpen">
+        <el-menu :default-active="activeProjectKey" :default-openeds="defaultOpenedProjects" unique-opened @select="handleMenuSelect" @open="handleProjectOpen">
           <el-submenu
             v-for="item in projectList"
             :key="String(item.id)"
@@ -59,7 +59,6 @@
                 :key="'scene-' + scene.id"
                 :index="'scene-' + scene.id"
                 class="scene-project-item"
-                @click.native="openScenePreview(scene)"
               >
                 <i v-if="scene.icon" class="scene-item-icon">
                   <svg-icon :icon-class="scene.icon"/>
@@ -526,9 +525,19 @@ export default {
     editProjectDone(project) {
       this.scene.project = project.id;
     },
-    handleProjectSelect(index) {
-      // 只响应项目级别的 select（场景用 click.native 处理，不走 select）
-      if (index.startsWith('scene-')) return;
+    handleMenuSelect(index) {
+      if (index.startsWith('scene-')) {
+        // 点击场景条目
+        const sceneId = index.slice('scene-'.length);
+        // 从所有已加载的 scenesMap 里找到对应场景对象
+        let found = null;
+        for (const pid of Object.keys(this.scenesMap)) {
+          found = (this.scenesMap[pid] || []).find(s => String(s.id) === String(sceneId));
+          if (found) break;
+        }
+        if (found) this.openScenePreview(found);
+      }
+      // 场景 tip 条目（loading/empty）不做任何处理
     },
     handleProjectOpen(index) {
       // el-submenu 展开时：切换右侧内容 + 懒加载该项目场景
