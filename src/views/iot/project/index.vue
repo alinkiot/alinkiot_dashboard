@@ -80,12 +80,6 @@
                 @click="handleUpdate(project)"
               >编辑</el-button>
               <el-button
-                size="mini"
-                icon="el-icon-setting"
-                v-hasPermi="['system:config:query']"
-                @click="handleConfig(project)"
-              >配置</el-button>
-              <el-button
                 v-if="currProject!==project.name"
                 size="mini"
                 type="primary"

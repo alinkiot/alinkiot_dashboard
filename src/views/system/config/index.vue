@@ -1,14 +1,21 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="search-form">
-      <InputTableSelect
-        prop="project"
-        showColumn="title"
-        label="所属项目"
-        table="project"
-        :queryId="queryId"
-        :read="queryId !== undefined"
-        @selectDone="selectProjectDone"/>
+      <el-form-item label="所属项目" prop="project">
+        <el-select
+          v-model="selectedProjectId"
+          placeholder="请选择项目"
+          filterable
+          @change="handleProjectChange"
+        >
+          <el-option
+            v-for="proj in projectOptions"
+            :key="proj.id"
+            :label="proj.title"
+            :value="proj.id"
+          />
+        </el-select>
+      </el-form-item>
     </el-form>
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
@@ -163,6 +170,7 @@
 
 <script>
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config";
+import { queryObject } from "@/api/iot/table";
 import ImageDialog from "./components/imageDialog.vue"
 import WxDialog from "./components/wxDialog.vue"
 import AiDialog from "./components/aiDialog.vue"
@@ -173,7 +181,6 @@ import ImagePreview from "@/components/ImagePreview/index.vue";
 import WxMiniDialog from "./components/wxMiniDialog.vue";
 import TdengineDialog from "./components/tdDialog.vue";
 import RedisDialog from "./components/redisDialog.vue";
-import InputTableSelect from "@/components/InputTableSelect/index.vue";
 import MenuDlg from "./components/menuDialog.vue";
 import CommForm from "@/views/system/config/components/commForm.vue";
 import ThemeDialog from "@/views/system/config/components/themeDialog.vue";
@@ -185,7 +192,6 @@ export default {
   dicts: ['sys_yes_no','iot_sys_config'],
   components: {
     ThemeDialog,
-    InputTableSelect,
     ImageDialog,
     WxDialog,
     SmsDialog,
@@ -228,6 +234,8 @@ export default {
       },
       project: undefined,
       projects: [],
+      projectOptions: [],
+      selectedProjectId: undefined,
       isCreate: true,
       // 表单参数
       form: {},
@@ -281,16 +289,49 @@ export default {
       this.reset();
       // 重置选中项目与查询，避免沿用上一个项目的状态
       this.project = undefined;
+      this.selectedProjectId = undefined;
       this.configList = [];
       this.total = 0;
       const configKey = this.$route.query.configKey;
       if(configKey){
         this.queryParams.configKey = configKey;
       }
-      this.queryId = this.$route.query.projectId;
-      if(!this.queryId && this.queryParams.configKey){
-        this.getList();
-      }
+      const routeProjectId = this.$route.query.projectId;
+      // 加载项目列表，加载完后：优先用路由指定的项目，否则默认选第一个
+      this.loadProjectOptions(routeProjectId ? String(routeProjectId) : undefined);
+    },
+    // 加载项目下拉列表，加载完后自动选中 preferProjectId 指定的项目（不传则选第一个）
+    loadProjectOptions(preferProjectId) {
+      const pageSize = 100;
+      const projectOptions = [];
+      const projectIds = new Set();
+      const loadPage = pageNum => queryObject('project', { pageNum, pageSize }).then(response => {
+        const rows = Array.isArray(response.rows) ? response.rows : [];
+        rows.forEach(p => {
+          const id = String(p.id);
+          if (!projectIds.has(id)) {
+            projectIds.add(id);
+            projectOptions.push(p);
+          }
+        });
+        const total = Number(response.total);
+        const hasLoadedAll = (total > 0 && projectOptions.length >= total) || rows.length < pageSize;
+        if (!hasLoadedAll) {
+          return loadPage(pageNum + 1);
+        }
+        this.projectOptions = projectOptions;
+        if (projectOptions.length > 0) {
+          // 优先用路由指定的项目，找不到则回退到第一个
+          const target = preferProjectId
+            ? (projectOptions.find(p => String(p.id) === preferProjectId) || projectOptions[0])
+            : projectOptions[0];
+          this.selectedProjectId = target.id;
+          this.selectProjectDone(target);
+        }
+      }).catch(() => {
+        this.$modal && this.$modal.msgError && this.$modal.msgError('项目列表加载失败');
+      });
+      loadPage(1);
     },
     getConfigIcon(configKey) {
       const iconMap = {
@@ -320,6 +361,10 @@ export default {
         this.project = undefined;
       }
       this.handleQuery();
+    },
+    handleProjectChange(id) {
+      const target = this.projectOptions.find(p => p.id === id);
+      this.selectProjectDone(target || undefined);
     },
     /** 查询参数列表 */
     getList() {

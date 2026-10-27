@@ -452,7 +452,7 @@ export default {
       this.open = true;
     },
     openDialog() {
-      this.scene = { status : "0", viewType : [], customViewNames: [] };
+      this.scene = { status : "0", viewType : [], customViewNames: [], project: this.project.id };
       this.open = true;
     },
     decodeCustomViewName(encodedName) {
