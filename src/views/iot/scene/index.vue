@@ -79,12 +79,20 @@
           <div class="scene-content-header">
             <div style="display:flex;align-items:center;gap:10px;">
               <h2>{{ selectedScene.title }}</h2>
+              <el-button
+                type="text"
+                :icon="scenePreviewEdit ? 'el-icon-unlock' : 'el-icon-lock'"
+                :style="scenePreviewEdit ? '' : 'color: silver'"
+                :title="scenePreviewEdit ? '退出编辑' : '进入编辑'"
+                @click="$refs.inlineScenePreview && $refs.inlineScenePreview.openEdit()"
+                v-hasPermi="['system:scene:edit']"
+              />
             </div>
             <div class="scene-header-actions">
               <el-button size="mini" icon="el-icon-edit-outline" @click="handleEdit(selectedScene)" v-hasPermi="['system:scene:edit']">编辑</el-button>
             </div>
           </div>
-          <ScenePreview :scene-id="selectedScene.id" preview-only />
+          <ScenePreview ref="inlineScenePreview" :scene-id="selectedScene.id" preview-only @edit-change="scenePreviewEdit = $event" />
         </template>
 
         <!-- 未选中场景时：显示卡片列表 -->
@@ -304,6 +312,7 @@ export default {
       loadingProjects: {},
       defaultOpenedProjects: [],
       selectedScene: null,
+      scenePreviewEdit: false,
       sceneQuery: {},
       open: false,
       // 查询参数
@@ -444,6 +453,7 @@ export default {
     },
     openScenePreview(row) {
       this.selectedScene = row;
+      this.scenePreviewEdit = false;
     },
     handleEdit(row) {
       const scene = JSON.parse(JSON.stringify(row));
