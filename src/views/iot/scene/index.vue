@@ -74,87 +74,106 @@
           </el-submenu>
         </el-menu>
       </aside>
-      <div v-loading="loading" class="scene-content">
-        <div class="scene-content-header">
-          <div>
-            <h2>{{ activeProjectTitle }}</h2>
-            <span>共 {{ total }} 个场景</span>
+      <div class="scene-content">
+        <!-- 选中场景时：直接内嵌渲染 -->
+        <template v-if="selectedScene">
+          <div class="scene-content-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <el-button size="mini" icon="el-icon-arrow-left" @click="selectedScene = null">返回</el-button>
+              <h2>{{ selectedScene.title }}</h2>
+            </div>
+            <div class="scene-header-actions">
+              <el-button size="mini" icon="el-icon-edit-outline" @click="handleEdit(selectedScene)" v-hasPermi="['system:scene:edit']">编辑</el-button>
+            </div>
           </div>
-          <div class="scene-header-actions">
-            <el-button
-              type="primary"
-              icon="el-icon-plus"
-              size="mini"
-              @click="openDialog"
-              v-hasPermi="['system:scene:add']"
-            >新增场景</el-button>
-            <el-button
-              v-if="!selectionMode"
-              type="danger"
-              icon="el-icon-delete"
-              size="mini"
-              @click="startSelection"
-              v-hasPermi="['system:scene:remove']"
-            >选择删除</el-button>
-            <template v-else>
+          <ScenePreview :scene-id="selectedScene.id" preview-only />
+        </template>
+
+        <!-- 未选中场景时：显示卡片列表 -->
+        <template v-else>
+          <div class="scene-content-header">
+            <div>
+              <h2>{{ activeProjectTitle }}</h2>
+              <span>共 {{ total }} 个场景</span>
+            </div>
+            <div class="scene-header-actions">
               <el-button
+                type="primary"
+                icon="el-icon-plus"
+                size="mini"
+                @click="openDialog"
+                v-hasPermi="['system:scene:add']"
+              >新增场景</el-button>
+              <el-button
+                v-if="!selectionMode"
                 type="danger"
                 icon="el-icon-delete"
                 size="mini"
-                :disabled="ids.length === 0"
-                @click="handleDelete"
+                @click="startSelection"
                 v-hasPermi="['system:scene:remove']"
-              >删除{{ ids.length ? `（${ids.length}）` : '' }}</el-button>
-              <el-button size="mini" @click="cancelSelection">取消</el-button>
-            </template>
-          </div>
-        </div>
-        <div v-if="tableList.length" class="scene-cards">
-          <el-card v-for="sceneItem in tableList" :key="sceneItem.id" class="scene-card" shadow="never">
-            <div class="scene-card-heading">
-              <el-checkbox
-                v-if="selectionMode"
-                :value="ids.includes(sceneItem.id)"
-                @change="checked => toggleSceneSelection(sceneItem, checked)"
-              />
-              <div class="scene-card-icon">
-                <svg-icon v-if="sceneItem.icon" :icon-class="sceneItem.icon"/>
-                <i v-else class="el-icon-monitor"></i>
-              </div>
-              <div class="scene-card-title">{{ sceneItem.title }}</div>
-              <dict-tag
-                class="scene-card-status"
-                :options="dict.type.sys_normal_disable"
-                :value="sceneItem.status"
-              />
-            </div>
-            <div class="scene-card-description">{{ sceneItem.remark || '暂无描述' }}</div>
-            <div class="scene-card-footer">
-              <div class="scene-card-meta">
-                <span>ID: {{ sceneItem.id }}</span>
-                <span v-if="sceneItem.createTime">{{ parseTime(sceneItem.createTime, '{y}-{m}-{d}') }}</span>
-              </div>
-              <div class="scene-card-actions">
-                <el-button size="mini" type="text" icon="el-icon-info" @click="openScenePreview(sceneItem)">查看</el-button>
+              >选择删除</el-button>
+              <template v-else>
                 <el-button
+                  type="danger"
+                  icon="el-icon-delete"
                   size="mini"
-                  type="text"
-                  icon="el-icon-edit-outline"
-                  @click="handleEdit(sceneItem)"
-                  v-hasPermi="['system:scene:edit']"
-                >编辑</el-button>
-              </div>
+                  :disabled="ids.length === 0"
+                  @click="handleDelete"
+                  v-hasPermi="['system:scene:remove']"
+                >删除{{ ids.length ? `（${ids.length}）` : '' }}</el-button>
+                <el-button size="mini" @click="cancelSelection">取消</el-button>
+              </template>
             </div>
-          </el-card>
-        </div>
-        <el-empty v-else-if="!loading" description="暂无场景" />
-        <pagination
-          v-show="total > 0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+          </div>
+          <div v-loading="loading">
+            <div v-if="tableList.length" class="scene-cards">
+              <el-card v-for="sceneItem in tableList" :key="sceneItem.id" class="scene-card" shadow="never">
+                <div class="scene-card-heading">
+                  <el-checkbox
+                    v-if="selectionMode"
+                    :value="ids.includes(sceneItem.id)"
+                    @change="checked => toggleSceneSelection(sceneItem, checked)"
+                  />
+                  <div class="scene-card-icon">
+                    <svg-icon v-if="sceneItem.icon" :icon-class="sceneItem.icon"/>
+                    <i v-else class="el-icon-monitor"></i>
+                  </div>
+                  <div class="scene-card-title">{{ sceneItem.title }}</div>
+                  <dict-tag
+                    class="scene-card-status"
+                    :options="dict.type.sys_normal_disable"
+                    :value="sceneItem.status"
+                  />
+                </div>
+                <div class="scene-card-description">{{ sceneItem.remark || '暂无描述' }}</div>
+                <div class="scene-card-footer">
+                  <div class="scene-card-meta">
+                    <span>ID: {{ sceneItem.id }}</span>
+                    <span v-if="sceneItem.createTime">{{ parseTime(sceneItem.createTime, '{y}-{m}-{d}') }}</span>
+                  </div>
+                  <div class="scene-card-actions">
+                    <el-button size="mini" type="text" icon="el-icon-info" @click="openScenePreview(sceneItem)">查看</el-button>
+                    <el-button
+                      size="mini"
+                      type="text"
+                      icon="el-icon-edit-outline"
+                      @click="handleEdit(sceneItem)"
+                      v-hasPermi="['system:scene:edit']"
+                    >编辑</el-button>
+                  </div>
+                </div>
+              </el-card>
+            </div>
+            <el-empty v-else-if="!loading" description="暂无场景" />
+            <pagination
+              v-show="total > 0"
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="getList"
+            />
+          </div>
+        </template>
       </div>
     </div>
     <el-dialog title="创建/编辑场景" :visible.sync="open">
@@ -241,41 +260,6 @@
         <el-button size="mini" @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
-    <el-dialog
-      :visible.sync="previewVisible"
-      width="90%"
-      top="5vh"
-      :fullscreen="previewMaximized"
-      append-to-body
-      destroy-on-close
-      :custom-class="previewMaximized ? 'scene-preview-dialog scene-preview-dialog--maximized' : 'scene-preview-dialog'"
-      @closed="previewMaximized = false"
-    >
-      <div slot="title" class="scene-preview-title">
-        <span>场景：{{ previewSceneTitle }}</span>
-        <el-button
-          type="text"
-          :icon="previewEdit ? 'el-icon-unlock' : 'el-icon-lock'"
-          :style="previewEdit ? '' : 'color: silver'"
-          @click="$refs.scenePreview.openEdit()"
-          v-hasPermi="['system:scene:edit']"
-        />
-        <el-button
-          class="scene-preview-maximize"
-          type="text"
-          :icon="previewMaximized ? 'el-icon-copy-document' : 'el-icon-full-screen'"
-          :title="previewMaximized ? '还原' : '最大化'"
-          @click="previewMaximized = !previewMaximized"
-        />
-      </div>
-      <ScenePreview
-        v-if="previewSceneId !== undefined"
-        ref="scenePreview"
-        :scene-id="previewSceneId"
-        preview-only
-        @edit-change="previewEdit = $event"
-      />
-    </el-dialog>
   </div>
 </template>
 
@@ -321,11 +305,7 @@ export default {
       scenesMap: {},
       loadingProjects: {},
       defaultOpenedProjects: [],
-      previewVisible: false,
-      previewSceneId: undefined,
-      previewSceneTitle: '',
-      previewEdit: false,
-      previewMaximized: false,
+      selectedScene: null,
       sceneQuery: {},
       open: false,
       // 查询参数
@@ -465,11 +445,7 @@ export default {
       this.multiple = true;
     },
     openScenePreview(row) {
-      this.previewSceneTitle = row.title;
-      this.previewSceneId = row.id;
-      this.previewEdit = false;
-      this.previewMaximized = false;
-      this.previewVisible = true;
+      this.selectedScene = row;
     },
     handleEdit(row) {
       const scene = JSON.parse(JSON.stringify(row));
@@ -562,6 +538,7 @@ export default {
       const target = this.projectList.find(item => String(item.id) === projectId);
       if (target) {
         this.project = target;
+        this.selectedScene = null;
         this.queryParams.pageNum = 1;
         this.getList();
       }
