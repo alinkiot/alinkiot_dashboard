@@ -47,8 +47,8 @@
             class="scene-project-submenu"
           >
             <template slot="title">
-              <i class="el-icon-folder"></i>
-              <span class="scene-project-name">{{ item.title }}</span>
+              <i class="el-icon-folder" @click="handleProjectTitleClick(item)"></i>
+              <span class="scene-project-name" @click="handleProjectTitleClick(item)">{{ item.title }}</span>
             </template>
             <el-menu-item v-if="loadingProjects[item.id]" :index="'loading-' + item.id" disabled class="scene-submenu-tip">
               <i class="el-icon-loading"></i> 加载中...
@@ -539,19 +539,22 @@ export default {
       }
       // 场景 tip 条目（loading/empty）不做任何处理
     },
+    handleProjectTitleClick(item) {
+      // 点击项目标题：切换右侧列表（无论展开还是收起都响应）
+      if (this.project.id === item.id) {
+        // 已是当前项目，只需清掉选中的场景，回到列表
+        this.selectedScene = null;
+        return;
+      }
+      this.project = item;
+      this.selectedScene = null;
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
     handleProjectOpen(index) {
-      // el-submenu 展开时：切换右侧内容 + 懒加载该项目场景
+      // el-submenu 展开时：懒加载该项目场景（切换右侧在 handleProjectTitleClick 里处理）
       if (index.startsWith('scene-')) return;
       const projectId = index;
-      // 切换右侧展示的项目
-      const target = this.projectList.find(item => String(item.id) === projectId);
-      if (target) {
-        this.project = target;
-        this.selectedScene = null;
-        this.queryParams.pageNum = 1;
-        this.getList();
-      }
-      // 已加载过则不重复请求
       if (this.scenesMap[projectId] !== undefined) return;
       this.$set(this.loadingProjects, projectId, true);
       queryObject('scene', { pageNum: 1, pageSize: 200, project: projectId }).then(response => {
