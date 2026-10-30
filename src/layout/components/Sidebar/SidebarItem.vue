@@ -1,6 +1,6 @@
 <template>
-  <div v-if="!item.hidden" :style="'background-color:' + getStyle('subMenuHover')">
-    <template v-if="hasOneShowingChild(item.children,item) && (!onlyOneChild.children||onlyOneChild.noShowingChildren)&&!item.alwaysShow">
+  <div v-if="!item.hidden && (item.component || item.children)" :style="'background-color:' + getStyle('subMenuHover')">
+    <template v-if="hasOneShowingChild(item.children,item) && (!onlyOneChild.children||onlyOneChild.noShowingChildren)&&(!item.alwaysShow || onlyOneChild.noShowingChildren)">
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path, onlyOneChild.query)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{'submenu-title-noDropdown':!isNest}">
           <item :icon="onlyOneChild.meta.icon||(item.meta&&item.meta.icon)" :title="onlyOneChild.meta.title" />
@@ -76,11 +76,14 @@ export default {
       const showingChildren = children.filter(item => {
         if (item.hidden) {
           return false
-        } else {
-          // Temp set(will be used if only has one showing child)
-          this.onlyOneChild = item
-          return true
         }
+        // 按钮权限节点不应出现在导航栏：没有页面组件（目录有Layout，菜单有具体路径）
+        if (!item.component) {
+          return false
+        }
+        // Temp set(will be used if only has one showing child)
+        this.onlyOneChild = item
+        return true
       })
 
       // When there is only one child router, the child router is displayed by default
