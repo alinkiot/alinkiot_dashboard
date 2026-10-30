@@ -60,7 +60,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="success"
+          type="default"
 
           icon="el-icon-edit"
           size="mini"
@@ -82,7 +82,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="default"
 
           icon="el-icon-download"
           size="mini"

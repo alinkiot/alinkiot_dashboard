@@ -89,8 +89,10 @@ export default {
   },
   created() {
     siteInfo().then(res => {
-      const loginTypes = res.data.site_login;
-      this.showBindBox = loginTypes.includes('wechat_login');
+      // site_login 是后端按站点配置下发的字符串，未配置时为 undefined。
+      // 直接 .includes 会抛 TypeError，整页白屏，这里做一次兜底。
+      const loginTypes = (res.data && res.data.site_login) || '';
+      this.showBindBox = String(loginTypes).includes('wechat_login');
     });
     this.getUser();
   },
@@ -124,12 +126,13 @@ export default {
 </script>
 <style lang="scss" scoped>
 .pull-right {
-  color: #2156a4;
-  font-weight: bold;
+  color: var(--ui-text-primary, #1d1d1f);
+  font-weight: 600;
 }
 
 .bind-card {
-  width: 400px;
+  width: 100%;
+  max-width: 400px;
   font-weight: bolder;
   //background-color: #44d7b6;
   //color: white;

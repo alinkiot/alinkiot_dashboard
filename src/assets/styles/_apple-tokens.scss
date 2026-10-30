@@ -90,10 +90,30 @@ $radius-xl: 16px;
 $radius-pill: 980px;
 
 // === Shadows ===
-$shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
-$shadow-card-hover: 0 3px 5px 30px rgba(0, 0, 0, 0.08);
-$shadow-elevated: 0 5px 30px rgba(0, 0, 0, 0.22);
+// 统一的三级高度：静止卡片 / 悬浮 / 浮层（弹窗、下拉）
+$shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+$shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.08);
+$shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.16);
+$shadow-overlay: 0 12px 48px rgba(0, 0, 0, 0.24);
 $shadow-nav: 0 1px 0 rgba(0, 0, 0, 0.06);
+
+// 深色界面下阴影几乎不可见，改用高光描边表达层级
+$shadow-card-dark: 0 1px 2px rgba(0, 0, 0, 0.32);
+$shadow-overlay-dark: 0 12px 48px rgba(0, 0, 0, 0.55);
+
+// === Controls（控件尺寸梯度，8px 栅格） ===
+// 全站按钮/输入框/选择器共用，避免 mini 28px、small 32px 混排导致的错位
+$control-h-mini: 30px;
+$control-h-small: 32px;
+$control-h-default: 36px;
+$control-h-large: 40px;
+
+$control-fs-mini: 13px;
+$control-fs-small: 13px;
+$control-fs-default: 14px;
+
+$focus-ring: 0 0 0 3px rgba(0, 113, 227, 0.16);
+$focus-ring-dark: 0 0 0 3px rgba(41, 151, 255, 0.24);
 
 // === Navigation ===
 $nav-bg: rgba(251, 251, 253, 0.72);

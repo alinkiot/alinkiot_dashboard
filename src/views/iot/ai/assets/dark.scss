@@ -1,0 +1,82 @@
+// ============================================================
+// AI 对话 / 智能体 —— 暗色主题适配
+// ------------------------------------------------------------
+// 这套聊天界面是从 Dify 前端移植过来的，样式里大量写死了浅色
+// （.chat-container 直接 background: #fff，欢迎语 #303133）。
+// 在深空黑 / 午夜蓝 / 森林绿三套暗色主题下就是一张白纸贴在
+// 深色布局上。这里只做"换色"不做"改版"，保持原有结构。
+// ============================================================
+
+.theme-dark,
+.theme-dark-blue,
+.theme-green {
+  // 主容器：由白卡改为与页面同底的透明，边界交给外层 app-container
+  // 注意：原样式是 .dify-chat .dify-main .chat-container[data-v-x]，多一个层级，
+  // 这里必须 !important 才能盖住。
+  .dify-chat .dify-main .chat-container {
+    background-color: transparent !important;
+  }
+
+  // 标题
+  .dify-chat .chat-title,
+  .dify-chat .chat-header h3 {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  // 欢迎语
+  .el-x-welcome-title {
+    color: #f5f5f7 !important;
+  }
+
+  .el-x-welcome-description {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  // 输入区底注
+  .dify-chat .chat-input-footer {
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  // 思考态标签（原来是白底黑字）
+  .thinking {
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.75);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.06);
+    }
+
+    &--active {
+      background-color: rgba(0, 113, 227, 0.18);
+      border-color: rgba(0, 113, 227, 0.4);
+      color: #6cb0ff;
+
+      &:hover {
+        background-color: rgba(0, 113, 227, 0.26);
+      }
+    }
+  }
+
+  // 气泡：库组件默认浅灰底深色字，这里统一压到暗色面板上
+  .el-x-bubble-content,
+  .el-x-bubble-content-wrapper {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .el-x-bubble--left .el-x-bubble-content {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  // 输入框
+  .el-x-sender,
+  .el-x-sender-content,
+  .el-x-sender-textarea {
+    background-color: transparent !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .el-x-sender-wrap,
+  .el-x-sender-content {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+}

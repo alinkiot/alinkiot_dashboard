@@ -23,12 +23,12 @@
 
       <!-- 主体内容 -->
       <div class="screen-body">
-        <!-- 左列第1格：设备概览 -->
+        <!-- 左列第1格：设备概览（4指标合并一格） -->
         <div class="grid-cell cell-l1">
           <div class="panel-card">
             <div class="card-title"><span class="title-bar" />设备概览</div>
-            <div class="card-body">
-              <div class="stat-grid">
+            <div class="card-body stat-body">
+              <div class="stat-grid stat-grid-4">
                 <div class="stat-item is-online">
                   <div class="stat-icon"><i class="el-icon-connection" /></div>
                   <div class="stat-info">
@@ -43,17 +43,6 @@
                     <div class="stat-label">离线设备</div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 左列第2格：设备总览 -->
-        <div class="grid-cell cell-l2">
-          <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />设备总览</div>
-            <div class="card-body">
-              <div class="stat-grid">
                 <div class="stat-item is-total">
                   <div class="stat-icon"><i class="el-icon-cpu" /></div>
                   <div class="stat-info">
@@ -73,12 +62,22 @@
           </div>
         </div>
 
-        <!-- 左列第3格：占位 -->
+        <!-- 左列第2格：设备上线趋势 -->
+        <div class="grid-cell cell-l2">
+          <div class="panel-card">
+            <div class="card-title"><span class="title-bar" />设备上线趋势</div>
+            <div class="card-body">
+              <div ref="deviceTrendChart" class="chart-container" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 左列第3格：产品分布 -->
         <div class="grid-cell cell-l3">
           <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />待定面板</div>
+            <div class="card-title"><span class="title-bar" />产品分布</div>
             <div class="card-body">
-              <div class="cell-placeholder">待放置内容</div>
+              <div ref="productChart" class="chart-container" />
             </div>
           </div>
         </div>
@@ -182,12 +181,12 @@
           </div>
         </div>
 
-        <!-- 右列第3格：占位 -->
+        <!-- 右列第3格：7日告警趋势 -->
         <div class="grid-cell cell-r3">
           <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />待定面板</div>
+            <div class="card-title"><span class="title-bar" />告警趋势</div>
             <div class="card-body">
-              <div class="cell-placeholder">待放置内容</div>
+              <div ref="alarmTrendChartSide" class="chart-container" />
             </div>
           </div>
         </div>
@@ -202,15 +201,15 @@
           </div>
         </div>
         <div class="footer-card">
-          <div class="card-title"><span class="title-bar" />设备上线趋势</div>
+          <div class="card-title"><span class="title-bar" />24h 在线设备</div>
           <div class="card-body">
-            <div ref="deviceTrendChart" class="chart-container" />
+            <div ref="deviceTrendChartBottom" class="chart-container" />
           </div>
         </div>
         <div class="footer-card">
-          <div class="card-title"><span class="title-bar" />告警趋势</div>
+          <div class="card-title"><span class="title-bar" />消息上报统计</div>
           <div class="card-body">
-            <div ref="alarmTrendChart" class="chart-container" />
+            <div ref="messageTrendChart" class="chart-container" />
           </div>
         </div>
       </div>
@@ -521,8 +520,9 @@ export default {
         name: levelNameMap[item.level] || item.level,
         itemStyle: { color: levelColorMap[item.level] || accent }
       }))
-      if (this.chartInstances[1]) {
-        this.chartInstances[1].setOption({
+      const chart = this._charts && this._charts.alarm
+      if (chart) {
+        chart.setOption({
           series: [{ data: chartData }]
         })
       }
@@ -556,8 +556,10 @@ export default {
     },
 
     startAlarmScroll() {
+      if (!this.alarmList.length) return
       const itemHeight = 36
       const totalHeight = this.alarmList.length * itemHeight
+      if (totalHeight <= 0) return
       this.scrollTimer = setInterval(() => {
         this.scrollTop -= 1
         if (Math.abs(this.scrollTop) >= totalHeight / 2) {
@@ -586,12 +588,13 @@ export default {
       const accentRgb = get('--sc-accent-rgb', '34, 211, 238')
       const accent = get('--sc-accent', '#22d3ee')
       const accent2Rgb = get('--sc-accent-2-rgb', '59, 130, 246')
+      const accent2 = get('--sc-accent-2', '#3b82f6')
       return {
         accent,
         accentRgb,
-        accent2: get('--sc-accent-2', '#3b82f6'),
+        accent2,
         accent2Rgb,
-        dim: get('--sc-text-dim', '#8bb4d8'),
+        dim: get('--sc-text-dim-color', '#8bb4d8'),
         axis: `rgba(${accentRgb}, 0.25)`,
         split: `rgba(${accentRgb}, 0.07)`,
         areaTop: `rgba(${accentRgb}, 0.45)`,
@@ -608,29 +611,29 @@ export default {
       this.chartInstances = []
       this.initDeviceTrendChart()
       this.initAlarmChart()
+      this.initProductChart()
       this.initMessageChart()
-      this.initAlarmTrendChart()
+      this.initAlarmTrendChartSide()
+      this.initDeviceTrendChartBottom()
+      this.initMessageTrendChart()
     },
 
     initDeviceTrendChart() {
+      if (!this.$refs.deviceTrendChart) return
       const chart = echarts.init(this.$refs.deviceTrendChart)
+      this._charts = this._charts || {}
+      this._charts.deviceTrend = chart
       this.chartInstances.push(chart)
       const p = this.themePalette()
       const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
       chart.setOption({
         tooltip: { trigger: 'axis' },
-        grid: { top: 20, right: 15, bottom: 30, left: 40 },
+        grid: { top: 20, right: 10, bottom: 24, left: 38 },
         xAxis: {
           type: 'category',
           data: hours,
           boundaryGap: false,
-          axisLabel: {
-            color: p.dim,
-            fontSize: 10,
-            interval: 'auto',
-            hideOverlap: true,
-            rotate: 40
-          },
+          axisLabel: { color: p.dim, fontSize: 9, interval: 5 },
           axisTick: { alignWithLabel: true },
           axisLine: { lineStyle: { color: p.axis }}
         },
@@ -645,8 +648,6 @@ export default {
             name: '在线设备',
             type: 'line',
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 5,
             showSymbol: false,
             areaStyle: {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -654,8 +655,8 @@ export default {
                 { offset: 1, color: p.areaBottom }
               ])
             },
-            lineStyle: { color: p.accent, width: 2.5, shadowColor: p.lineShadow, shadowBlur: 10 },
-            itemStyle: { color: p.accent, borderColor: '#fff', borderWidth: 1 },
+            lineStyle: { color: p.accent, width: 2, shadowColor: p.lineShadow, shadowBlur: 8 },
+            itemStyle: { color: p.accent },
             data: hours.map(() => Math.floor(80 + Math.random() * 60))
           }
         ]
@@ -663,7 +664,10 @@ export default {
     },
 
     initAlarmChart() {
+      if (!this.$refs.alarmChart) return
       const chart = echarts.init(this.$refs.alarmChart)
+      this._charts = this._charts || {}
+      this._charts.alarm = chart
       this.chartInstances.push(chart)
       const p = this.themePalette()
       chart.setOption({
@@ -695,13 +699,56 @@ export default {
       })
     },
 
+    initProductChart() {
+      if (!this.$refs.productChart) return
+      const chart = echarts.init(this.$refs.productChart)
+      this._charts = this._charts || {}
+      this._charts.product = chart
+      this.chartInstances.push(chart)
+      const p = this.themePalette()
+      const products = ['传感器', '控制器', '网关', '摄像头', '执行器']
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { top: 12, right: 10, bottom: 22, left: 38 },
+        xAxis: {
+          type: 'category',
+          data: products,
+          axisLabel: { color: p.dim, fontSize: 10 },
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: p.dim, fontSize: 10 },
+          splitLine: { lineStyle: { color: p.split }},
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        series: [
+          {
+            type: 'bar',
+            barWidth: '45%',
+            itemStyle: {
+              borderRadius: [4, 4, 0, 0],
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: p.accent },
+                { offset: 1, color: `rgba(${p.accentRgb}, 0.15)` }
+              ])
+            },
+            data: [156, 89, 42, 35, 34]
+          }
+        ]
+      })
+    },
+
     initMessageChart() {
+      if (!this.$refs.messageChart) return
       const chart = echarts.init(this.$refs.messageChart)
+      this._charts = this._charts || {}
+      this._charts.message = chart
       this.chartInstances.push(chart)
       const p = this.themePalette()
       chart.setOption({
         tooltip: { trigger: 'axis' },
-        grid: { top: 15, right: 15, bottom: 25, left: 40 },
+        grid: { top: 15, right: 10, bottom: 24, left: 38 },
         xAxis: {
           type: 'category',
           data: [],
@@ -734,17 +781,21 @@ export default {
     },
 
     updateDeviceDailyChart(deviceDaily) {
-      if (!this.chartInstances[3]) return
+      const chart = this._charts && this._charts.message
+      if (!chart) return
       const dates = deviceDaily.map((d) => dayjs(d.date).format('MM-DD'))
       const counts = deviceDaily.map((d) => d.count)
-      this.chartInstances[3].setOption({
+      chart.setOption({
         xAxis: { data: dates },
         series: [{ data: counts }]
       })
     },
 
-    initAlarmTrendChart() {
-      const chart = echarts.init(this.$refs.alarmTrendChart)
+    initAlarmTrendChartSide() {
+      if (!this.$refs.alarmTrendChartSide) return
+      const chart = echarts.init(this.$refs.alarmTrendChartSide)
+      this._charts = this._charts || {}
+      this._charts.alarmTrendSide = chart
       this.chartInstances.push(chart)
       const days = Array.from({ length: 7 }, (_, i) =>
         dayjs().subtract(6 - i, 'day').format('MM-DD')
@@ -756,11 +807,11 @@ export default {
           top: 0,
           textStyle: { color: p.dim, fontSize: 10 }
         },
-        grid: { top: 25, right: 15, bottom: 25, left: 35 },
+        grid: { top: 25, right: 10, bottom: 22, left: 32 },
         xAxis: {
           type: 'category',
           data: days,
-          axisLabel: { color: p.dim, fontSize: 10 },
+          axisLabel: { color: p.dim, fontSize: 9 },
           axisLine: { lineStyle: { color: p.axis }}
         },
         yAxis: {
@@ -793,6 +844,95 @@ export default {
           }
         ]
       })
+    },
+
+    initDeviceTrendChartBottom() {
+      if (!this.$refs.deviceTrendChartBottom) return
+      const chart = echarts.init(this.$refs.deviceTrendChartBottom)
+      this._charts = this._charts || {}
+      this._charts.deviceTrendBottom = chart
+      this.chartInstances.push(chart)
+      const p = this.themePalette()
+      const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { top: 15, right: 10, bottom: 24, left: 38 },
+        xAxis: {
+          type: 'category',
+          data: hours,
+          boundaryGap: false,
+          axisLabel: { color: p.dim, fontSize: 9, interval: 5 },
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: p.dim, fontSize: 10 },
+          splitLine: { lineStyle: { color: p.split }},
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        series: [
+          {
+            name: '在线设备',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: p.areaTop },
+                { offset: 1, color: p.areaBottom }
+              ])
+            },
+            lineStyle: { color: p.accent2, width: 2, shadowColor: p.lineShadow, shadowBlur: 8 },
+            itemStyle: { color: p.accent2 },
+            data: hours.map(() => Math.floor(80 + Math.random() * 60))
+          }
+        ]
+      })
+    },
+
+    initMessageTrendChart() {
+      if (!this.$refs.messageTrendChart) return
+      const chart = echarts.init(this.$refs.messageTrendChart)
+      this._charts = this._charts || {}
+      this._charts.messageTrend = chart
+      this.chartInstances.push(chart)
+      const p = this.themePalette()
+      const days = Array.from({ length: 7 }, (_, i) =>
+        dayjs().subtract(6 - i, 'day').format('MM-DD')
+      )
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { top: 15, right: 10, bottom: 24, left: 42 },
+        xAxis: {
+          type: 'category',
+          data: days,
+          axisLabel: { color: p.dim, fontSize: 10 },
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: p.dim, fontSize: 10 },
+          splitLine: { lineStyle: { color: p.split }},
+          axisLine: { lineStyle: { color: p.axis }}
+        },
+        series: [
+          {
+            name: '消息数',
+            type: 'line',
+            smooth: true,
+            showSymbol: false,
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: `rgba(${p.accent2Rgb}, 0.4)` },
+                { offset: 1, color: `rgba(${p.accent2Rgb}, 0)` }
+              ])
+            },
+            lineStyle: { color: p.accent2, width: 2 },
+            itemStyle: { color: p.accent2 },
+            data: days.map(() => Math.floor(5000 + Math.random() * 15000))
+          }
+        ]
+      })
     }
   }
 }
@@ -804,7 +944,7 @@ export default {
 // SCSS 变量改为引用 CSS 变量，使所有既有 $accent 用法随主题变化
 $accent: var(--sc-accent);
 $accent-2: var(--sc-accent-2);
-$text-dim: var(--sc-text-dim);
+$text-dim: var(--sc-text-dim-color);
 
 .dashboard-screen {
   /* ===== 默认主题变量（科技蓝）===== */
@@ -813,7 +953,7 @@ $text-dim: var(--sc-text-dim);
   --sc-accent-2: #3b82f6;
   --sc-accent-2-rgb: 59, 130, 246;
   --sc-text: #e6f3ff;
-  --sc-text-dim: var(--sc-text-dim);
+  --sc-text-dim-color: #8bb4d8;
   --sc-grid: rgba(90, 160, 230, 0.04);
   --sc-card-bg: rgba(10, 30, 56, 0.55);
   --sc-card-border: rgba(var(--sc-accent-rgb), 0.18);
@@ -883,7 +1023,7 @@ $text-dim: var(--sc-text-dim);
     --sc-accent-2: #5fb4ff;
     --sc-accent-2-rgb: 95, 180, 255;
     --sc-text: #f0f4fa;
-    --sc-text-dim: #9aa7bd;
+    --sc-text-dim-color: #9aa7bd;
     --sc-card-bg: rgba(40, 44, 54, 0.5);
     --sc-bg: radial-gradient(ellipse at 50% -10%, #23262e 0%, #17181d 45%, #0d0e11 100%);
     --sc-glow-1: rgba(41, 151, 255, 0.12);
@@ -897,7 +1037,7 @@ $text-dim: var(--sc-text-dim);
     --sc-accent-2: #5fe07e;
     --sc-accent-2-rgb: 95, 224, 126;
     --sc-text: #e9f7ec;
-    --sc-text-dim: #a2cbb0;
+    --sc-text-dim-color: #a2cbb0;
     --sc-card-bg: rgba(20, 50, 30, 0.45);
     --sc-bg: radial-gradient(ellipse at 50% -10%, #16331f 0%, #112516 45%, #081209 100%);
     --sc-glow-1: rgba(52, 199, 89, 0.14);
@@ -911,7 +1051,7 @@ $text-dim: var(--sc-text-dim);
     --sc-accent-2: #46a0ff;
     --sc-accent-2-rgb: 70, 160, 255;
     --sc-text: #1d1d1f;
-    --sc-text-dim: rgba(29, 29, 31, 0.55);
+    --sc-text-dim-color: rgba(29, 29, 31, 0.55);
     --sc-grid: rgba(0, 113, 227, 0.05);
     --sc-card-bg: rgba(255, 255, 255, 0.72);
     --sc-card-border: rgba(0, 0, 0, 0.08);
@@ -1074,16 +1214,9 @@ $text-dim: var(--sc-text-dim);
   min-width: 0;
 }
 
-/* 占位内容样式 */
+/* 占位内容样式（已废弃，保留选择器避免编译告警） */
 .cell-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(139, 180, 216, 0.5);
-  font-size: 13px;
-  letter-spacing: 2px;
+  display: none;
 }
 
 /* ===================== 卡片（玻璃拟态） ===================== */
@@ -1151,50 +1284,71 @@ $text-dim: var(--sc-text-dim);
   min-height: 0;
   position: relative;
   overflow: hidden;
+
+  // stat-grid 容器：不裁剪，给 grid 行足够空间伸展
+  &.stat-body {
+    overflow: visible;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 /* ===================== 统计卡片 ===================== */
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 10px 6px;
-  height: 100%;
+  gap: 8px;
+  padding: 0;
+  flex: 1;               // 在 .stat-body（flex容器）中填满高度
+  min-height: 0;
   box-sizing: border-box;
-  align-content: center;
+
+  // 4指标合一：略微收紧 gap
+  &.stat-grid-4 {
+    gap: 6px;
+  }
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 10px;
+  gap: 10px;
+  padding: 8px 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 0.25s, background 0.25s;
+  min-height: 0;        // 允许在 grid 行里自由收缩
+  overflow: hidden;
 
   &:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     background: rgba(255, 255, 255, 0.06);
   }
 
   .stat-icon {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    font-size: 22px;
+    border-radius: 8px;
+    font-size: 18px;
+  }
+
+  .stat-info {
+    min-width: 0;
+    flex: 1;
   }
 
   .stat-value {
-    font-size: 30px;
+    font-size: 26px;
     line-height: 1;
     font-family: "electronicFont";
     font-weight: bold;
+    white-space: nowrap;
 
     &.online { color: #52e39a; }
     &.total { color: $accent; }
@@ -1204,14 +1358,37 @@ $text-dim: var(--sc-text-dim);
 
   .stat-label {
     color: var(--sc-text);
-    font-size: 12px;
-    margin-top: 6px;
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.7;
+    white-space: nowrap;
   }
 
-  &.is-online .stat-icon { color: #52e39a; background: rgba(82, 227, 154, 0.12); box-shadow: 0 0 14px rgba(82, 227, 154, 0.25); }
-  &.is-total .stat-icon { color: $accent; background: rgba(var(--sc-accent-rgb), 0.12); box-shadow: 0 0 14px rgba(var(--sc-accent-rgb), 0.25); }
-  &.is-offline .stat-icon { color: #a3b5c9; background: rgba(163, 181, 201, 0.12); }
-  &.is-product .stat-icon { color: #ffc861; background: rgba(255, 200, 97, 0.12); box-shadow: 0 0 14px rgba(255, 200, 97, 0.25); }
+  &.is-online .stat-icon { color: #52e39a; background: rgba(82, 227, 154, 0.12); box-shadow: 0 0 12px rgba(82, 227, 154, 0.22); }
+  &.is-total .stat-icon { color: $accent; background: rgba(var(--sc-accent-rgb), 0.12); box-shadow: 0 0 12px rgba(var(--sc-accent-rgb), 0.22); }
+  &.is-offline .stat-icon { color: #a3b5c9; background: rgba(163, 181, 201, 0.1); }
+  &.is-product .stat-icon { color: #ffc861; background: rgba(255, 200, 97, 0.12); box-shadow: 0 0 12px rgba(255, 200, 97, 0.22); }
+}
+
+// stat-grid-4 场景下字号进一步压缩，防止小屏被截
+.stat-grid-4 .stat-item {
+  padding: 6px 8px;
+  gap: 8px;
+
+  .stat-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    margin-top: 2px;
+  }
 }
 
 .chart-container {
@@ -1326,7 +1503,7 @@ $text-dim: var(--sc-text-dim);
   display: flex;
   gap: 14px;
   margin-top: 14px;
-  height: 210px;
+  height: 195px;
   flex-shrink: 0;
 
   .footer-card {

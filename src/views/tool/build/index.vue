@@ -371,12 +371,15 @@ export default {
 </script>
 
 <style lang='scss'>
-body, html{
+// 注意：这里是全局样式块（表单构建器的老代码），原先写的是
+// body, html { background: #fff }，一旦进过本页，整个应用（含侧栏、
+// 顶栏所在的 body）底色会被永久改成白色。收敛到页面容器上。
+.container {
   margin: 0;
   padding: 0;
   background: #fff;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
 }
@@ -566,21 +569,22 @@ $lighterBlue: #0071e3;
   position: absolute;
   left: 0;
   top: 0;
-  height: 100vh;
+  // 52 顶栏 + 38 标签栏：容器在 app-main 内，写 100vh 会被裁掉 90px
+  height: calc(100vh - 90px);
 }
 .left-scrollbar{
-  height: calc(100vh - 42px);
+  height: calc(100vh - 132px);
   overflow: hidden;
 }
 .center-scrollbar {
-  height: calc(100vh - 42px);
+  height: calc(100vh - 132px);
   overflow: hidden;
   border-left: 1px solid #f1e8e8;
   border-right: 1px solid #f1e8e8;
   box-sizing: border-box;
 }
 .center-board {
-  height: 100vh;
+  height: calc(100vh - 90px);
   width: auto;
   margin: 0 350px 0 260px;
   box-sizing: border-box;
@@ -777,6 +781,62 @@ $lighterBlue: #0071e3;
       background: #F56C6C;
       color: #fff;
     }
+  }
+}
+
+// ------------------------------------------------------------------
+// 暗色主题适配
+// 画布（.drawing-board）保持白纸——它预览的是最终生成的表单，
+// 必须是真实配色；两侧组件库与属性面板跟随主题变暗。
+// ------------------------------------------------------------------
+.theme-dark,
+.theme-dark-blue,
+.theme-green {
+  .container {
+    background: transparent;
+  }
+
+  .left-board,
+  .right-board,
+  .center-board,
+  .center-scrollbar,
+  .logo-wrapper,
+  .action-bar {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .logo-wrapper {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .components-title,
+  .custom-tree-node {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .components-body {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+
+    .svg-icon {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .empty-info {
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  // 画布容器给一层浅色底，白纸才立得住
+  .center-board-row {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .drawing-board {
+    background: #fff;
+    border-radius: 8px;
   }
 }
 

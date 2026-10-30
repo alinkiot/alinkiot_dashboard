@@ -77,7 +77,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-          type="warning"
+          type="default"
 
           icon="el-icon-close"
           size="mini"

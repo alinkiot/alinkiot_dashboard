@@ -8,14 +8,20 @@
 </template>
 
 <script>
-const version = require('element-ui/package.json').version // element-ui version from node_modules
+// 主题换色只做一件事：把已编译进包里的主题 CSS 中的强调色替换成站点色。
+// 这里刻意不再从 unpkg 拉取 element-ui 官方 theme-chalk：
+//   1) 那份 CSS 是默认主题，注入后会把本项目 element-variables.scss 编译出的
+//      圆角 / 字号 / 语义色全部覆盖回 Element 默认值（表现为危险按钮变回 #F56C6C、
+//      圆角变回 3~4px、字号回到 12px）；
+//   2) 它是一次 200KB 级的运行时 CDN 请求，弱网下首屏会出现一次“主题闪变”。
 const ORIGINAL_THEME = '#0071e3' // Apple Blue
 
 export default {
   data() {
     return {
-      chalk: '', // content of theme-chalk css
-      theme: ''
+      theme: '',
+      // 记录当前样式表里实际存在的强调色，避免连续换色时找不到可替换的色值
+      applied: ORIGINAL_THEME
     }
   },
   computed: {
@@ -35,46 +41,22 @@ export default {
     }
   },
   created() {
-    if(this.defaultTheme !== ORIGINAL_THEME) {
+    if (this.defaultTheme !== ORIGINAL_THEME) {
       this.setTheme(this.defaultTheme)
     }
   },
 
   methods: {
     async setTheme(val) {
-      const oldVal = this.chalk ? this.theme : ORIGINAL_THEME
       if (typeof val !== 'string') return
+      const oldVal = this.applied || ORIGINAL_THEME
       const themeCluster = this.getThemeCluster(val.replace('#', ''))
       const originalCluster = this.getThemeCluster(oldVal.replace('#', ''))
-
-      const getHandler = (variable, id) => {
-        return () => {
-          const originalCluster = this.getThemeCluster(ORIGINAL_THEME.replace('#', ''))
-          const newStyle = this.updateStyle(this[variable], originalCluster, themeCluster)
-
-          let styleTag = document.getElementById(id)
-          if (!styleTag) {
-            styleTag = document.createElement('style')
-            styleTag.setAttribute('id', id)
-            document.head.appendChild(styleTag)
-          }
-          styleTag.innerText = newStyle
-        }
-      }
-
-      if (!this.chalk) {
-        const url = `https://unpkg.com/element-ui@${version}/lib/theme-chalk/index.css`
-        await this.getCSSString(url, 'chalk')
-      }
-
-      const chalkHandler = getHandler('chalk', 'chalk-style')
-
-      chalkHandler()
 
       const styles = [].slice.call(document.querySelectorAll('style'))
         .filter(style => {
           const text = style.innerText
-          return new RegExp(oldVal, 'i').test(text) && !/Chalk Variables/.test(text)
+          return text && new RegExp(oldVal, 'i').test(text) && !/Chalk Variables/.test(text)
         })
       styles.forEach(style => {
         const { innerText } = style
@@ -82,6 +64,7 @@ export default {
         style.innerText = this.updateStyle(innerText, originalCluster, themeCluster)
       })
 
+      this.applied = val
       this.$emit('change', val)
     },
 
@@ -91,20 +74,6 @@ export default {
         newStyle = newStyle.replace(new RegExp(color, 'ig'), newCluster[index])
       })
       return newStyle
-    },
-
-    getCSSString(url, variable) {
-      return new Promise(resolve => {
-        const xhr = new XMLHttpRequest()
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState === 4 && xhr.status === 200) {
-            this[variable] = xhr.responseText.replace(/@font-face{[^}]+}/, '')
-            resolve()
-          }
-        }
-        xhr.open('GET', url)
-        xhr.send()
-      })
     },
 
     getThemeCluster(theme) {

@@ -109,3 +109,8 @@ export default {
   }
 }
 </style>
+
+<!-- 暗色主题适配：必须非 scoped，才能作用到 ChatContainer 等子组件内部 -->
+<style lang="scss">
+@import './assets/dark.scss';
+</style>

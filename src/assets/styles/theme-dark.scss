@@ -18,9 +18,18 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
     color: #f5f5f7 !important;
     &:focus {
-      border-color: #2997ff !important;
-      box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.15) !important;
+      // 原来写死 #2997ff（苹果深色蓝）：森林绿主题聚焦时会冒出一圈蓝框，
+      // 和主题色对不上。改为跟随主题提亮后的 --current-color-focus。
+      border-color: var(--current-color-focus, #2997ff) !important;
+      box-shadow: 0 0 0 3px var(--current-color-ring, rgba(41, 151, 255, 0.15)) !important;
     }
+  }
+
+  // 日期区间：真实焦点落在内部的 .el-range-input 上，外层 .el-range-editor
+  // 不会 :focus，只加 .is-active。上面的 !important 会把它压回灰边，
+  // 于是只剩光晕、没有描边，所以这里单独补一条。
+  .el-range-editor.is-active {
+    border-color: var(--current-color-focus, #2997ff) !important;
   }
 
   .el-input-group__append,

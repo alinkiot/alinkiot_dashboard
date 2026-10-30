@@ -1,6 +1,6 @@
 <template>
   <div>
-      <el-button size="mini" type="success" @click="openDialog()" class="btn-tool" icon="el-icon-upload">导入
+      <el-button size="mini" type="default" @click="openDialog()" class="btn-tool" icon="el-icon-upload">导入
       </el-button>
       <el-dialog title="导入本地数据" :visible.sync="openSendDialog" >
         <el-form ref="importForm" :model="form" :rules="rules" label-position="top">

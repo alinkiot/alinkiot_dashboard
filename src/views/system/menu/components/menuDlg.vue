@@ -6,7 +6,7 @@
       size="mini"
       icon="el-icon-star-on"
       @click="handleAdd()"
-      style="color: rgb(196 176 27); "
+      style="color: #ff9f0a; "
       v-if="title===''"
     />
     <el-button

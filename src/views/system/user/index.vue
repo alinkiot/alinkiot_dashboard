@@ -88,7 +88,7 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
-              type="success"
+              type="default"
               icon="el-icon-edit"
               size="mini"
               :disabled="single"

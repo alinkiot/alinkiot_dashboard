@@ -14,7 +14,7 @@
       </el-form-item>
       <DateTimePicker :options="dict.type.echart_aggregate" @change="dateChange" prop="dateRange"/>
       <el-form-item>
-        <el-button type="success" icon="el-icon-download" size="mini" @click="handleExport">导出</el-button>
+        <el-button type="default" icon="el-icon-download" size="mini" @click="handleExport">导出</el-button>
       </el-form-item>
     </el-form>
     <el-divider></el-divider>

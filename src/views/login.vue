@@ -2,12 +2,10 @@
   <div :class="'login ' + sideTheme" :style="rootCss">
       <theme-picker style="visibility: hidden; width: 0px;" />
       <div class="login-page" v-loading="loadInfo" :style="'color:'+hdColor">
-        <div style="margin-bottom: 10px;">
-          <div style="width: 20%; display: inline-block;">
-            <el-image v-if="logo" :src="logo" class="logo-img">
-              <el-image slot="error" :src="defLogo" class="logo-img"/>
-            </el-image>
-          </div>
+        <div class="login-head">
+          <el-image v-if="logo" :src="logo" class="logo-img">
+            <el-image slot="error" :src="defLogo" class="logo-img"/>
+          </el-image>
           <div class="title">{{title}}</div>
         </div>
         <div v-if="isWxLogin && wxLoginBox">
@@ -127,6 +125,7 @@ import { wxBind } from "@/api/iot/wx";
 import { get_phoneCode } from '@/api/iot/system'
 import { updateUserProfile } from '@/api/system/user'
 import ThemePicker from "@/components/ThemePicker/index.vue";
+import { ensureContrastWithWhite, mixWithWhite, toRgba } from '@/utils/contrast'
 
 export default {
   name: "Login",
@@ -147,10 +146,18 @@ export default {
     rootCss() {
       // 把当前主题的配色注入为 CSS 变量，供表单/卡片/输入框渲染使用
       const accent = this.theme || '#0071e3'
+      // 主按钮 / 激活 Tab / 焦点环都是「填充色承载白字」，主题色过亮时压暗到达标
+      const accentStrong = ensureContrastWithWhite(accent)
       const panel = this.bgColor || '#1d1d1f'      // 主题面板色（卡片背景）
       const text = this.hdColor || '#f5f5f7'       // 主题前景色（文字）
+      // 登录卡片恒为深色底：聚焦描边要用提亮版主题色，压暗版会糊进背景
+      const accentFocus = mixWithWhite(accent, 0.35)
       return this.bgCss +
-        ';--login-accent:' + accent +
+        ';--login-accent:' + accentStrong +
+        ';--current-color:' + accent +
+        ';--current-color-strong:' + accentStrong +
+        ';--current-color-focus:' + accentFocus +
+        ';--current-color-ring:' + toRgba(accentFocus, 0.26) +
         ';--login-panel:' + panel +
         ';--login-text:' + text + ';'
     }
@@ -370,8 +377,10 @@ export default {
 <style rel="stylesheet/scss" lang="scss">
 
 .logo-img{
-  width: 60px;
-  vertical-align: middle;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 .login {
   background-color: #000000;
@@ -382,13 +391,20 @@ export default {
   height: 100%;
   background-size: cover;
 }
+
+// 品牌区：logo 与标题基线对齐，替代原先 20% / 80% 的硬分栏
+.login-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
 .title {
-  display: inline-block;
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 600;
-  vertical-align: middle;
-  width: 80%;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   color: inherit;
 }
 
@@ -420,24 +436,6 @@ export default {
   }
 }
 
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 0 5px rgba(41, 151, 255, 0.25), 0 0 20px rgba(41, 151, 255, 0.1);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
 .login-form {
   .el-input {
     height: 48px;
@@ -449,8 +447,8 @@ export default {
       border-radius: 10px;
       transition: border-color 0.3s, box-shadow 0.3s;
       &:focus {
-        border-color: var(--login-accent, #2997ff);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--login-accent, #2997ff) 20%, transparent);
+        border-color: var(--current-color-focus, #2997ff);
+        box-shadow: 0 0 0 3px var(--current-color-ring, rgba(41, 151, 255, 0.2));
       }
       &::placeholder {
         color: rgba(255, 255, 255, 0.35);
@@ -471,22 +469,55 @@ export default {
     border-radius: 10px;
     font-size: 16px;
     font-weight: 500;
-    letter-spacing: -0.01em;
-    background: linear-gradient(
-      90deg,
-      var(--login-accent, #0071e3) 0%,
-      var(--login-accent, #0071e3) 40%,
-      color-mix(in srgb, var(--login-accent, #0071e3) 65%, #ffffff) 50%,
-      var(--login-accent, #0071e3) 60%,
-      var(--login-accent, #0071e3) 100%
-    );
-    background-size: 200% 100%;
+    letter-spacing: 0.02em;
+    // 静止态用纯色 + 顶部微高光：原来的横向渐变在静止时就露出一道浅色光带，
+    // 看起来像渲染错误的按钮
+    background-color: var(--login-accent, #0071e3);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
     border-color: var(--login-accent, #0071e3);
-    transition: background-position 0.3s;
-    &:hover {
-      animation: shimmer 2s linear infinite;
-      background-color: color-mix(in srgb, var(--login-accent, #0071e3) 90%, #ffffff);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.18);
+    transition: filter .18s ease, box-shadow .18s ease, transform .12s ease;
+
+    &:hover, &:focus {
+      background-color: var(--login-accent, #0071e3);
+      border-color: var(--login-accent, #0071e3);
+      filter: brightness(1.07);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(0, 0, 0, 0.24);
     }
+    &:active {
+      filter: brightness(0.95);
+      transform: translateY(1px);
+    }
+  }
+}
+
+// 登录卡内的 Tab：默认样式是浅色主题配色，放在深色毛玻璃卡上几乎看不清
+.login-page {
+  .el-tabs__header {
+    margin-bottom: 24px;
+  }
+  .el-tabs__nav-wrap::after {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  .el-tabs__item {
+    height: 36px;
+    line-height: 36px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+
+    &.is-active {
+      color: var(--login-text, #f5f5f7);
+      font-weight: 600;
+    }
+    &:hover {
+      color: rgba(255, 255, 255, 0.78);
+    }
+  }
+  .el-tabs__active-bar {
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--login-accent, #0071e3);
   }
 }
 .login-tip {
@@ -501,6 +532,9 @@ export default {
   img {
     cursor: pointer;
     vertical-align: middle;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
   }
 }
 .el-login-footer {
@@ -515,7 +549,8 @@ export default {
   letter-spacing: 0.01em;
 }
 .login-code-img {
-  height: 38px;
+  height: 48px;
+  border-radius: 8px;
 }
 .link-type{
   margin-left: 5px;
@@ -557,6 +592,20 @@ export default {
   }
   .el-login-footer {
     color: rgba(255, 255, 255, 0.55);
+  }
+
+  // 浅底卡片上的 Tab 换回深色文字
+  .el-tabs__nav-wrap::after {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+  .el-tabs__item {
+    color: rgba(0, 0, 0, 0.5);
+    &.is-active {
+      color: #1d1d1f;
+    }
+    &:hover {
+      color: rgba(0, 0, 0, 0.75);
+    }
   }
 }
 

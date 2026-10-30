@@ -1,0 +1,450 @@
+// === UI Polish Layer ===
+// 加载顺序上排在所有样式之后：只做“统一、收敛、对齐”，不改动任何业务结构。
+// 目标：把散落在各页面里的 mini/small 控件、表格、空状态、侧栏节奏收敛到同一套度量上。
+
+// ------------------------------------------------------------------
+// 0. 语义色变量
+//    项目里各页面写死 #2156a4 / #303133 / #fff 的地方不少，暗色主题下
+//    直接失效（深蓝字压在深蓝底上）。这里补一层最小的语义变量，
+//    新代码优先用它，老代码按需替换。
+// ------------------------------------------------------------------
+:root {
+  --ui-text-primary: #1d1d1f;
+  --ui-text-secondary: #6e6e73;
+  --ui-text-tertiary: #8e8e93;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #f5f5f7;
+  --ui-border: rgba(0, 0, 0, 0.08);
+}
+
+body.theme-dark,
+body.theme-dark-blue,
+body.theme-green {
+  --ui-text-primary: #f5f5f7;
+  --ui-text-secondary: rgba(255, 255, 255, 0.62);
+  --ui-text-tertiary: rgba(255, 255, 255, 0.42);
+  --ui-surface: rgba(255, 255, 255, 0.04);
+  --ui-surface-2: rgba(255, 255, 255, 0.06);
+  --ui-border: rgba(255, 255, 255, 0.1);
+}
+
+// ------------------------------------------------------------------
+// 1. 控件尺寸梯度
+//    现状：按钮 mini 28px/12px、输入框 small 32px/12px 混用，同一行经常差 2~4px，
+//    视觉上像“没对齐”。这里统一到 8px 栅格的 30 / 32 / 36 三档，字号不再低于 13px。
+// ------------------------------------------------------------------
+.el-button {
+  height: $control-h-default;
+  padding: 0 18px;
+  font-size: $control-fs-default;
+}
+
+// 文字按钮不参与固定高度，否则表格行里的“编辑/删除”会变成 36px 高的块，
+// 把原本紧凑的操作列撑开
+.el-button--text {
+  height: auto;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.el-button--large {
+  height: $control-h-large;
+  font-size: 14px;
+}
+
+.el-button--small {
+  height: $control-h-small;
+  padding: 0 14px;
+  font-size: $control-fs-small;
+  border-radius: 8px;
+}
+
+.el-button--mini {
+  height: $control-h-mini;
+  padding: 0 12px;
+  font-size: $control-fs-mini;
+  border-radius: 7px;
+}
+
+// 纯图标按钮保持正方，避免 padding 让它变成扁椭圆
+.el-button.is-circle {
+  width: $control-h-default;
+  padding: 0;
+}
+.el-button--small.is-circle {
+  width: $control-h-small;
+}
+.el-button--mini.is-circle {
+  width: $control-h-mini;
+}
+
+// 按钮内的图标与文字基线对齐（Element 默认会偏上 1px）
+.el-button [class*='el-icon-'] + span,
+.el-button .svg-icon + span {
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+
+// 输入类控件同步到同一梯度，保证与按钮同排时不出现高低差
+.el-input {
+  &.el-input--mini .el-input__inner { height: $control-h-mini; line-height: $control-h-mini; font-size: $control-fs-mini; }
+  &.el-input--small .el-input__inner { height: $control-h-small; line-height: $control-h-small; font-size: $control-fs-small; }
+  &.el-input--mini .el-input__icon,
+  &.el-input--small .el-input__icon { line-height: $control-h-small; }
+}
+
+.el-select {
+  &.el-select--mini .el-input__inner { height: $control-h-mini; line-height: $control-h-mini; }
+  &.el-select--small .el-input__inner { height: $control-h-small; line-height: $control-h-small; }
+}
+
+.el-range-editor.el-input__inner {
+  &.el-input__inner--mini { height: $control-h-mini; }
+  &.el-input__inner--small { height: $control-h-small; }
+}
+
+// ------------------------------------------------------------------
+// 2. 搜索区
+//    现状：条件项固定 200px 从左往右排，动作按钮紧跟最后一个条件，
+//    第二行常常只剩“搜索/重置”贴在最左边，右侧空出 700px，视觉重心左倾。
+//    做法：把最后一组动作推到行尾，形成“条件左、动作右”的稳定结构。
+// ------------------------------------------------------------------
+.search-form {
+  align-items: flex-end;
+
+  > .el-form-item {
+    margin-bottom: 12px;
+  }
+
+  // 动作组：通常是最后一个 form-item（含“搜索/重置”）
+  > .el-form-item:last-child {
+    margin-left: auto;
+    padding-left: 8px;
+  }
+
+  .el-form-item__label {
+    font-size: 13px;
+    color: #6e6e73;
+    font-weight: 400;
+  }
+}
+
+// ------------------------------------------------------------------
+// 3. 表格
+//    现状：表头 12px 偏小、行高由内容撑开导致疏密不一，数字列不等宽。
+// ------------------------------------------------------------------
+.el-table {
+  th.el-table__cell {
+    height: 44px;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  td.el-table__cell {
+    height: 48px;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .cell {
+    padding: 0 12px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  // 数字列等宽，纵向对比时小数点能对齐
+  .el-table__body {
+    font-variant-numeric: tabular-nums;
+  }
+
+  // 首列稍宽留白，末列操作区不贴边
+  th.el-table__cell:first-child .cell,
+  td.el-table__cell:first-child .cell { padding-left: 16px; }
+  th.el-table__cell:last-child .cell,
+  td.el-table__cell:last-child .cell { padding-right: 16px; }
+
+  // 行内操作按钮之间留出呼吸，避免“编辑删除更多”挤成一串
+  .el-button--text + .el-button--text {
+    margin-left: 12px;
+  }
+}
+
+// ------------------------------------------------------------------
+// 4. （空状态已统一到第 11 节，此处不再重复声明，避免两套规则互相覆盖）
+// ------------------------------------------------------------------
+
+// ------------------------------------------------------------------
+// 5. 表格右侧工具条
+//    现状：一排 6 个圆形图标按钮，颜色各自继承（有的发黄有的发红），
+//    看起来像一排彩色圆点，读不出“同一组工具”。
+//    做法：统一为中性灰描边，悬停才出现强调色。
+// ------------------------------------------------------------------
+.top-right-btn {
+  .el-button.is-circle {
+    color: #6e6e73;
+    background-color: transparent;
+    border-color: rgba(0, 0, 0, 0.12);
+
+    &:hover,
+    &:focus {
+      color: var(--current-color, #0071e3);
+      border-color: var(--current-color, #0071e3);
+      background-color: rgba(0, 113, 227, 0.06);
+    }
+  }
+
+  // 图标之间留 6px，避免圆点挤在一起
+  .el-button + .el-button,
+  .el-dropdown {
+    margin-left: 6px;
+  }
+}
+
+.theme-dark,
+.theme-dark-blue,
+.theme-green {
+  .top-right-btn .el-button.is-circle {
+    color: rgba(255, 255, 255, 0.55);
+    border-color: rgba(255, 255, 255, 0.14);
+
+    &:hover,
+    &:focus {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.32);
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// 6. 承载白字的强调色填充块
+//    theme-dark.scss 里对激活标签 / 分页当前页用了 `$accent !important`，
+//    内联样式和普通规则都盖不住。森林绿的 #34c759 配白字只有 2.2:1，
+//    这里统一改用 layout 计算出的 --current-color-strong（已压暗到 ≥4.5:1）。
+// ------------------------------------------------------------------
+body.theme-light,
+body.theme-dark,
+body.theme-dark-blue,
+body.theme-blue,
+body.theme-green {
+  .tags-view-container .tags-view-wrapper .tags-view-item.active,
+  .el-pagination .el-pager li.active,
+  .el-checkbox__input.is-checked .el-checkbox__inner,
+  .el-radio__input.is-checked .el-radio__inner {
+    background-color: var(--current-color-strong, var(--current-color, #0071e3)) !important;
+    border-color: var(--current-color-strong, var(--current-color, #0071e3)) !important;
+  }
+
+  .tags-view-container .tags-view-wrapper .tags-view-item.active {
+    color: #fff !important;
+  }
+}
+
+// ------------------------------------------------------------------
+// 7. 侧栏菜单节奏
+//    现状：一级项 56px、二级项 50px，且二级文字缩进 40px < 一级文字 52px，
+//    子项文字反而比父项更靠左，层级关系被读反。
+// ------------------------------------------------------------------
+#app .sidebar-container {
+  .el-menu-item,
+  .el-submenu__title {
+    height: 52px;
+    line-height: 52px;
+  }
+
+  .el-menu--inline {
+    .el-menu-item,
+    .el-submenu__title {
+      height: 46px;
+      line-height: 46px;
+      // 一级文字起点在 52px（图标 20 + 16 + 间距 16），二级再进一级到 56px
+      padding-left: 56px !important;
+      font-size: 13px;
+    }
+  }
+
+  // 选中态：在左侧补一根强调色短轨，比整块半透明底色更容易一眼定位
+  .el-menu--inline .el-menu-item.is-active {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 32px;
+      top: 50%;
+      width: 3px;
+      height: 16px;
+      margin-top: -8px;
+      border-radius: 2px;
+      background: var(--current-color, #0071e3);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// 8. 焦点态
+//    a) 只保留一套「描边 + 光晕」，不要两层框
+//       按 CSS 规范，input / textarea 只要获得焦点就匹配 :focus-visible
+//       （鼠标点进去也算，不像按钮只认键盘）。输入框本身已经有焦点态，
+//       再叠一圈 outline 就成了两层套框，且深色主题下两圈颜色还不一样。
+//       所以 outline 只补给「没有自带焦点态」的控件。
+//    b) 下拉框的描边颜色必须跟着主题走
+//       Element 编译产物里 `.el-select .el-input__inner:focus` 用的是
+//       element-variables 里的主色字面量 #0071e3，特异性 (0,3,0)，
+//       比通用 `.el-input__inner:focus` (0,2,0) 高 —— 结果是描边是旧蓝、
+//       光晕是新主题色，看着就像两个框叠在一起。这里用 body 前缀抬到
+//       (0,3,1) / (0,4,1)，不靠 !important 也能压住。
+// ------------------------------------------------------------------
+.el-button:focus-visible,
+.el-menu-item:focus-visible,
+.el-submenu__title:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--current-color-focus, var(--current-color, #0071e3));
+  outline-offset: 2px;
+}
+
+body {
+  // 只补「Element 自己写了字面量主色、特异性更高」的那几种组合。
+  // 普通 input / textarea 的焦点态仍在 _apple-overrides.scss 里，
+  // 避免把大屏、注册页这些自带配色体系的页面一起卷进来。
+  .el-select .el-input__inner:focus,
+  .el-select .el-input.is-focus .el-input__inner,
+  .el-cascader .el-input.is-focus .el-input__inner,
+  .el-range-editor.is-active {
+    border-color: var(--current-color-focus, var(--current-color, #0071e3));
+    box-shadow: 0 0 0 3px var(--current-color-ring, rgba(0, 113, 227, 0.16));
+  }
+}
+
+// ------------------------------------------------------------------
+// 9. 滚动条
+// ------------------------------------------------------------------
+.el-scrollbar__bar {
+  opacity: 0.35;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+// ------------------------------------------------------------------
+// 10. 复选框 / 单选框
+//     Element 默认 .el-checkbox__inner 是白底 #fff + 2px 圆角。
+//     在暗色主题里它变成一颗突兀的白点（表头全选框尤其明显），
+//     圆角也和 4~12px 的设计体系对不上。
+// ------------------------------------------------------------------
+.el-checkbox__inner {
+  border-radius: 4px;
+  border-color: #d2d2d7;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.el-checkbox__input.is-focus .el-checkbox__inner,
+.el-checkbox__inner:hover {
+  border-color: var(--current-color, #0071e3);
+}
+
+.el-checkbox__label {
+  font-size: 13px;
+}
+
+// 勾选态的白勾要在透明底上仍然看得见
+.el-checkbox__inner::after {
+  border-color: #fff;
+}
+
+body.theme-dark,
+body.theme-dark-blue,
+body.theme-green {
+  .el-checkbox__inner,
+  .el-radio__inner {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .el-checkbox__input.is-disabled .el-checkbox__inner,
+  .el-radio__input.is-disabled .el-radio__inner {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  // 表头全选框落在浅色表头带上，需要更实的底色才不至于"消失"
+  .el-table__header .el-checkbox__inner {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+
+  .el-checkbox__label,
+  .el-radio__label {
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
+// ------------------------------------------------------------------
+// 11. 空状态
+//     Element 默认插画是 160px 的浅灰 3D 盒子，在暗色主题上就是
+//     一团灰，在亮色主题上也比页面其它图形重得多。统一换成 72px
+//     线性图标 + 弱化文案，两种主题共用一套，靠透明度适配。
+// ------------------------------------------------------------------
+.el-empty {
+  padding: 40px 0;
+}
+
+.el-empty__image {
+  width: 72px !important;
+  // 有历史规则写的是 height: auto（配合原插画 <img> 撑高），
+  // 插画被隐藏后高度会塌成 0，必须 !important
+  height: 72px !important;
+  opacity: 0.9;
+  filter: none !important;
+  // 长写法：background 简写里的 "/" 会被 Sass 当成除号，导致整条声明失效
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96' fill='none'%3E%3Crect x='15' y='26' width='66' height='45' rx='9' stroke='%238e8e93' stroke-width='2.5'/%3E%3Cpath d='M15 47h16l5 8h24l5-8h16' stroke='%238e8e93' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+
+  // 默认插画可能是 <img>（image 属性）也可能是内置 <svg>，两者都要让位
+  img,
+  svg {
+    display: none;
+  }
+}
+
+.el-empty__description {
+  margin-top: 14px;
+}
+
+.el-empty__description p {
+  color: #8e8e93;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+body.theme-dark,
+body.theme-dark-blue,
+body.theme-green {
+  .el-empty__image {
+    opacity: 0.55;
+  }
+
+  .el-empty__description p {
+    color: rgba(255, 255, 255, 0.42);
+  }
+}
+
+// ------------------------------------------------------------------
+// 12. 动效降级
+// ------------------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

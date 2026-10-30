@@ -33,6 +33,7 @@
 import ScrollPane from './ScrollPane'
 import path from 'path'
 import Item from '../Sidebar/Item.vue'
+import { ensureContrastWithWhite } from '@/utils/contrast'
 
 export default {
   components: { ScrollPane, Item },
@@ -79,8 +80,8 @@ export default {
     },
     activeStyle(tag) {
       if (!this.isActive(tag)) return {};
-      // 与全局 primary 按钮同源的主题强调色（可在主题设置中配置）
-      const accent = this.theme || '#0071e3'
+      // 与全局 primary 按钮同源：主题色过亮时压暗到白字可读
+      const accent = ensureContrastWithWhite(this.theme || '#0071e3')
       return {
         'background-color': accent,
         'border-color': accent

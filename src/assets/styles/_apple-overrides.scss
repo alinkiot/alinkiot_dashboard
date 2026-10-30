@@ -1,26 +1,71 @@
 // === Apple Design System: Element UI Global Overrides ===
+// 约定：所有“可交互强调色”统一走 var(--current-color)，由站点主题注入，
+// 不再硬编码 #0071e3，避免主题换色后按钮变了、Tab/分页/焦点环却没变。
 
 // --- Buttons ---
 .el-button {
   border-radius: 8px;
   font-weight: 400;
   letter-spacing: -0.01em;
-  transition: all 0.2s ease;
+  transition: background-color .18s ease, border-color .18s ease,
+              color .18s ease, box-shadow .18s ease, transform .18s ease;
 }
 
 .el-button--primary {
-  // 主题强调色（可在主题设置中配置），回退为 Apple 蓝
-  background-color: var(--current-color, #0071e3);
-  border-color: var(--current-color, #0071e3);
+  // 承载白字的填充色走 strong 变量：主题色过亮时会被压暗到对比度达标
+  background-color: var(--current-color-strong, var(--current-color, #0071e3));
+  border-color: var(--current-color-strong, var(--current-color, #0071e3));
   &:hover, &:focus {
-    background-color: var(--current-color, #0071e3);
-    border-color: var(--current-color, #0071e3);
+    background-color: var(--current-color-strong, var(--current-color, #0071e3));
+    border-color: var(--current-color-strong, var(--current-color, #0071e3));
     filter: brightness(1.08);
   }
   &:active {
-    background-color: var(--current-color, #0071e3);
-    border-color: var(--current-color, #0071e3);
+    background-color: var(--current-color-strong, var(--current-color, #0071e3));
+    border-color: var(--current-color-strong, var(--current-color, #0071e3));
     filter: brightness(0.95);
+  }
+}
+
+// 危险操作：默认收敛为“浅底 + 红字”，只在悬停/确认时加重。
+// 满色红块与主操作并排会让工具栏出现两个同等权重的焦点，误点成本很高。
+.el-button--danger {
+  background-color: rgba(255, 59, 48, 0.10);
+  border-color: rgba(255, 59, 48, 0.22);
+  color: #d70015;
+
+  &:hover, &:focus {
+    background-color: rgba(255, 59, 48, 0.16);
+    border-color: rgba(255, 59, 48, 0.34);
+    color: #d70015;
+  }
+  &:active {
+    background-color: rgba(255, 59, 48, 0.22);
+    border-color: rgba(255, 59, 48, 0.4);
+    color: #d70015;
+  }
+  // 显式声明 is-plain / 弹窗内确认按钮仍保持实心，保证“最终确认”足够醒目
+  &.is-plain {
+    background-color: rgba(255, 59, 48, 0.06);
+    border-color: rgba(255, 59, 48, 0.35);
+    color: #ff3b30;
+  }
+  &.is-disabled,
+  &.is-disabled:hover {
+    background-color: rgba(255, 59, 48, 0.06);
+    border-color: rgba(255, 59, 48, 0.12);
+    color: rgba(255, 59, 48, 0.4);
+  }
+}
+
+.el-message-box__btns .el-button--danger {
+  background-color: #ff3b30;
+  border-color: #ff3b30;
+  color: #fff;
+  &:hover, &:focus {
+    background-color: #ff453a;
+    border-color: #ff453a;
+    color: #fff;
   }
 }
 
@@ -29,8 +74,8 @@
   color: #1d1d1f;
   background: #ffffff;
   &:hover, &:focus {
-    color: #0071e3;
-    border-color: #0071e3;
+    color: var(--current-color, #0071e3);
+    border-color: var(--current-color, #0071e3);
     background-color: rgba(0, 113, 227, 0.04);
   }
 }
@@ -39,7 +84,7 @@
   color: #0066cc;
   font-weight: 400;
   &:hover, &:focus {
-    color: #0071e3;
+    color: var(--current-color, #0071e3);
   }
 }
 
@@ -52,22 +97,26 @@
 }
 
 // --- Input Fields ---
+// 焦点态只保留「1px 主题色描边 + 3px 半透明光晕」这一套。
+// 光晕颜色跟随主题（--current-color-ring 由 layout 按明/暗主题算好），
+// 不再写死蓝色，否则森林绿主题聚焦时会冒出一圈蓝。
 .el-input__inner {
   border-radius: 8px;
   border-color: rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   &:focus {
-    border-color: #0071e3;
-    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+    border-color: var(--current-color-focus, var(--current-color, #0071e3));
+    box-shadow: 0 0 0 3px var(--current-color-ring, rgba(0, 113, 227, 0.16));
   }
 }
 
 .el-textarea__inner {
   border-radius: 8px;
   border-color: rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   &:focus {
-    border-color: #0071e3;
-    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+    border-color: var(--current-color-focus, var(--current-color, #0071e3));
+    box-shadow: 0 0 0 3px var(--current-color-ring, rgba(0, 113, 227, 0.16));
   }
 }
 
@@ -149,7 +198,7 @@
   .el-pager li {
     border-radius: 6px;
     &.active {
-      background-color: #0071e3;
+      background-color: var(--current-color, #0071e3);
     }
   }
 }
@@ -167,7 +216,7 @@
   }
 }
 .el-tabs__active-bar {
-  background-color: #0071e3;
+  background-color: var(--current-color, #0071e3);
   height: 2px;
   border-radius: 1px;
 }
@@ -182,7 +231,7 @@
   border-radius: 4px;
   margin: 2px 6px;
   &.selected {
-    color: #0071e3;
+    color: var(--current-color, #0071e3);
     font-weight: 500;
   }
 }
@@ -228,12 +277,12 @@
 
 // --- Checkbox / Radio ---
 .el-checkbox__input.is-checked .el-checkbox__inner {
-  background-color: #0071e3;
-  border-color: #0071e3;
+  background-color: var(--current-color, #0071e3);
+  border-color: var(--current-color, #0071e3);
 }
 .el-radio__input.is-checked .el-radio__inner {
-  background-color: #0071e3;
-  border-color: #0071e3;
+  background-color: var(--current-color, #0071e3);
+  border-color: var(--current-color, #0071e3);
 }
 
 // --- Form Item ---
@@ -280,6 +329,23 @@ html body.theme-green {
       border-color: #2997ff;
       background-color: rgba(41, 151, 255, 0.08);
     }
+  }
+
+  // 危险操作在深色底上需要更亮的红字，否则 0.10 的浅底 + 深红字几乎看不清
+  .el-button--danger {
+    background-color: rgba(255, 69, 58, 0.14);
+    border-color: rgba(255, 69, 58, 0.28);
+    color: #ff8177;
+    &:hover, &:focus {
+      background-color: rgba(255, 69, 58, 0.22);
+      border-color: rgba(255, 69, 58, 0.42);
+      color: #ff9a92;
+    }
+  }
+  .el-message-box__btns .el-button--danger {
+    background-color: #ff453a;
+    border-color: #ff453a;
+    color: #fff;
   }
 
   // Card hover shadow — flat, no float

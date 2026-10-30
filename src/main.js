@@ -50,7 +50,10 @@ import SvgIcon from './components/SvgIcon/SvgIcon.vue';
 Vue.component('SvgIcon', SvgIcon);
 
 import ElementUIX from 'vue-element-ui-x';
-import 'element-ui/lib/theme-chalk/index.css'
+// 注意：这里不能再 import 'element-ui/lib/theme-chalk/index.css'。
+// 上面已通过 element-variables.scss 按自定义变量编译过完整的 theme-chalk，
+// 再引入官方预编译 CSS 会用默认主题把自定义变量全部覆盖回去
+// （表现为：危险色变回 #F56C6C、圆角变回 4px、字号回到 13px）。
 Vue.use(ElementUIX)
 
 // 全局方法挂载

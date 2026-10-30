@@ -1,5 +1,14 @@
 <template>
-  <div :class="classObj" class="app-wrapper" :style="{'--current-color': theme}">
+  <div
+    :class="classObj"
+    class="app-wrapper"
+    :style="{
+      '--current-color': theme,
+      '--current-color-strong': accentStrong,
+      '--current-color-focus': accentFocus,
+      '--current-color-ring': accentRing
+    }"
+  >
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
     <sidebar v-if="!sidebar.hide" class="sidebar-container" />
     <div :class="{hasTagsView:needTagsView,sidebarHide:sidebar.hide}" class="main-container">
@@ -21,6 +30,7 @@ import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
 import ResizeMixin from './mixin/ResizeHandler'
 import { mapState } from 'vuex'
 import variables from '@/assets/styles/variables.scss'
+import { ensureContrastWithWhite, mixWithWhite, toRgba } from '@/utils/contrast'
 
 export default {
   name: 'Layout',
@@ -54,6 +64,26 @@ export default {
         return this.sidebarWidth + 'px'
       }
     },
+    // 承载白字的填充色：主题色若过亮（如森林绿 #34c759）会被压暗到达标，
+    // 避免主按钮 / 激活标签出现「白字压浅底」读不清的问题
+    accentStrong() {
+      return ensureContrastWithWhite(this.theme || '#0071e3')
+    },
+    isDarkTheme() {
+      return ['theme-dark', 'theme-dark-blue', 'theme-green'].indexOf(this.sideTheme) > -1
+    },
+    // 聚焦描边色：深色主题下把主题色提亮一档，否则深底上看不出描边
+    accentFocus() {
+      const accent = this.theme || '#0071e3'
+      return this.isDarkTheme ? mixWithWhite(accent, 0.38) : accent
+    },
+    // 描边外的 3px 光晕。半透明 + 同色相，视觉上是一个焦点框而不是两层
+    accentRing() {
+      const accent = this.theme || '#0071e3'
+      return this.isDarkTheme
+        ? toRgba(mixWithWhite(accent, 0.38), 0.26)
+        : toRgba(accent, 0.16)
+    },
     classObj() {
       return {
         hideSidebar: !this.sidebar.opened,
@@ -69,7 +99,25 @@ export default {
   created() {
     this.getSiteInfo()
   },
+  watch: {
+    // 弹窗 / 下拉面板是 append 到 body 的，拿不到 .app-wrapper 上的变量，
+    // 会退回 var() 里的兜底值（旧主题蓝）。所以同步一份到 body 上。
+    accentFocus: {
+      immediate: true,
+      handler() {
+        this.syncRootVars()
+      }
+    }
+  },
   methods: {
+    syncRootVars() {
+      const body = document.body
+      if (!body) return
+      body.style.setProperty('--current-color', this.theme || '#0071e3')
+      body.style.setProperty('--current-color-strong', this.accentStrong)
+      body.style.setProperty('--current-color-focus', this.accentFocus)
+      body.style.setProperty('--current-color-ring', this.accentRing)
+    },
     getStyle(key) {
       const css = this.sideTheme ? this.sideTheme + '-' + key : key
       return variables[css] ? variables[css] : variables[key]

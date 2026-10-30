@@ -48,7 +48,7 @@
         :key="cmd.name"
         class="cmd-btn"
         size="mini"
-        type="warning"
+        type="default"
         icon="el-icon-edit"
         @click="openInput(cmd)"
       >{{ cmd.title }}</el-button>

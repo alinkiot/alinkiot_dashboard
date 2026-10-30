@@ -7,6 +7,8 @@
 @import './sidebar.scss';
 @import './btn.scss';
 @import "./theme-dark.scss";
+// 精修层必须最后加载：它统一控件度量、表格密度与侧栏节奏
+@import './ui-polish.scss';
 
 body {
   height: 100%;
