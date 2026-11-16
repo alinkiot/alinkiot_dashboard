@@ -1,9 +1,10 @@
 <template>
   <span>
-    <el-form-item :label="label" :prop="prop" v-if="!multiple">
+    <el-form-item :label="formLabel !== undefined ? formLabel : label" :prop="prop" v-if="!multiple">
       <el-tag v-if="read && title === ''" type="danger">未绑定</el-tag>
       <el-tag v-else-if="read">{{title}}</el-tag>
       <el-input v-model="title" readonly v-bind:placeholder="getPlaceholder()" v-else>
+        <template v-if="$slots.prepend" slot="prepend"><slot name="prepend"/></template>
         <el-button class="btn" @click="handleSelect" slot="append" icon="el-icon-thumb"></el-button>
         <el-button class="btn" @click="handleClean" slot="append" icon="el-icon-circle-close"></el-button>
       </el-input>
@@ -53,6 +54,11 @@ export default {
     },
     prop: {
       type: String
+    },
+    // 表单项标签，不传时使用 label；占位文字始终使用 label
+    formLabel: {
+      type: String,
+      default: undefined
     },
     label: {
       type: String,

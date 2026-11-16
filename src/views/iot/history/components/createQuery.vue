@@ -1,6 +1,8 @@
 <template>
     <el-form :model="params" :rules="validator" ref="queryForm" size="small" :inline="true" class="search-form">
       <SelectDevice @deviceChange="deviceChange"/>
+      <!-- 有时间条件时拆成两行：第一行选设备，第二行聚合 / 时间范围 / 查询 -->
+      <div v-if="showDateRange" class="form-row-break"></div>
       <div v-if="showDateRange" class="date-range-group">
         <el-form-item label="聚合" prop="step" v-if="showStep" class="agg-item">
           <el-select v-model="step" placeholder="聚合时间">
@@ -176,6 +178,12 @@ export default {
    与"选择设备"等搜索项在同一行对齐、正常换行 */
 .date-range-group {
   display: contents;
+}
+
+/* 占满整行的空元素，强制后面的搜索项换到第二行 */
+.form-row-break {
+  flex-basis: 100%;
+  height: 0;
 }
 
 /* 聚合下拉收窄，避免走全局 200px 过长 */

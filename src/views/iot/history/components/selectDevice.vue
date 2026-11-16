@@ -1,27 +1,35 @@
 <template>
   <span class="select-device">
-        <el-form-item class="search-type-item" v-if="view === 'query'">
-          <el-select v-model="type" placeholder="请选择" @change="change">
-            <el-option key="product" label="按产品搜索" value="product"/>
-            <el-option key="scene" label="按场景搜索" value="scene"/>
-          </el-select>
-        </el-form-item>
         <InputTableSelect v-if="type ==='product'"
+          :class="{ 'type-search-group': view === 'query' }"
           :read="defProductId !== undefined"
           :queryId="defProductId"
+          :formLabel="view === 'query' ? '搜索' : undefined"
           label="产品"
           showColumn="name"
           table="product"
           @selectDone="selectProductDone"
           prop="product"
-        />
+        >
+          <el-select v-if="view === 'query'" slot="prepend" v-model="type" class="search-type-select" @change="change">
+            <el-option key="product" label="产品" value="product"/>
+            <el-option key="scene" label="场景" value="scene"/>
+          </el-select>
+        </InputTableSelect>
         <InputTableSelect v-else-if="type === 'scene'"
+          :class="{ 'type-search-group': view === 'query' }"
+          :formLabel="view === 'query' ? '搜索' : undefined"
           label="场景"
           showColumn="title"
           table="scene"
           @selectDone="selectSceneDone"
           prop="scene"
-        />
+        >
+          <el-select v-if="view === 'query'" slot="prepend" v-model="type" class="search-type-select" @change="change">
+            <el-option key="product" label="产品" value="product"/>
+            <el-option key="scene" label="场景" value="scene"/>
+          </el-select>
+        </InputTableSelect>
         <InputTableSelect
           :read="defDeviceId!== undefined"
           :queryId="queryId"
@@ -139,18 +147,6 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-/* 修复“类型下拉与右侧选择框边框交叉重叠”：
-   原本类型下拉 el-form-item 固定 130px，但全局 .search-form .el-select
-   把下拉撑到 200px，溢出 70px 压到右侧输入框，造成边框交叠。
-   方案（已在浏览器实测验证）：去掉固定宽让盒子自适应、下拉收窄到 150px、
-   各搜索项之间加 12px 间距、输入框统一 190px。 */
-.select-device ::v-deep .search-type-item {
-  width: auto !important;
-}
-.select-device ::v-deep .search-type-item .el-select {
-  width: 150px !important;
-}
-
 /* 各搜索项之间留间距 */
 .select-device ::v-deep .el-form-item {
   margin-right: 12px;
@@ -160,5 +156,71 @@ export default {
 .select-device ::v-deep .el-input,
 .select-device ::v-deep .el-input-group {
   width: 190px !important;
+}
+
+/* 「产品 / 场景」下拉与右侧选择框合成一个整体：
+   悬停、聚焦时整体变色，内部分隔线保持默认颜色 */
+$divider-color: rgba(0, 0, 0, 0.1);
+$focus-color: var(--current-color-focus, var(--current-color, #0071e3));
+
+.type-search-group ::v-deep {
+  .el-input-group {
+    width: 270px !important;
+    border-radius: 8px;
+    transition: box-shadow 0.2s ease;
+  }
+
+  // 前置下拉：宽度固定，内部输入框跟随下拉宽度（否则会被上面的 190px 撑出去，
+  // 箭头溢出到右侧输入框）
+  .el-input-group__prepend .el-select {
+    width: 80px;
+
+    .el-input {
+      position: relative;
+      width: 100% !important;
+    }
+
+    .el-input__inner {
+      padding-left: 10px;
+      padding-right: 24px;
+      border-color: transparent !important;
+    }
+  }
+
+  // 去掉各部分自己的聚焦光晕，改为整体光晕
+  .el-input__inner,
+  .el-input__inner:focus,
+  .el-select .el-input.is-focus .el-input__inner {
+    box-shadow: none !important;
+  }
+
+  .el-input-group:hover {
+    > .el-input-group__prepend,
+    > .el-input-group__append,
+    > .el-input__inner {
+      border-color: #c0c4cc !important;
+    }
+  }
+
+  .el-input-group:focus-within {
+    // 深色主题的边框画在组合框外层
+    border-color: $focus-color !important;
+    box-shadow: 0 0 0 3px var(--current-color-ring, rgba(0, 113, 227, 0.16));
+
+    // 浅色主题的边框画在各部分上
+    > .el-input-group__prepend,
+    > .el-input-group__append,
+    > .el-input__inner {
+      border-color: $focus-color !important;
+    }
+  }
+
+  // 分隔线 = 中间输入框的左右边框，任何状态下都保持默认颜色
+  .el-input-group > .el-input__inner,
+  .el-input-group:hover > .el-input__inner,
+  .el-input-group:focus-within > .el-input__inner {
+    border-left-color: $divider-color !important;
+    border-right-color: $divider-color !important;
+  }
 }
 </style>
