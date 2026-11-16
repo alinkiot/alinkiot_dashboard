@@ -2,7 +2,7 @@
   <div class="thing-box">
     <div class="thing-box-btn" v-if="hasToolbar">
       <!-- 有控制指令配置时按 cmd 渲染，否则走默认按钮 -->
-      <CmdBtnBox v-if="hasCmd" :device="device" :values="valuesMap" @sendData="sendCmd" />
+      <CmdBtnBox v-if="hasCmd" :device="device" @sendData="sendCmd" />
       <DefaultBtnBox v-else-if="category === 'default'" :device="device" @sendData="sendCmd" />
       <!-- ProtocolBtn 内部按钮暂未启用，渲染空容器会在 flex 布局中占用 gap 间距，
            导致导入按钮与前面按钮组距离过大，故暂时隐藏，待远程配置按钮启用后恢复 -->

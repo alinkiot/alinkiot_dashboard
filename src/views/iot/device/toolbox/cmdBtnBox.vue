@@ -12,7 +12,7 @@
         @click="sendBtn(cmd)"
       >{{ cmd.title }}</el-button>
 
-      <!-- 枚举型：下拉菜单，点选项下发 -->
+      <!-- 枚举型：下拉菜单，点选项下发。下发值与设备上报值不一定对应，所以不显示选中状态 -->
       <el-dropdown
         v-else-if="cmd.ctrlType === 'enum'"
         :key="cmd.name"
@@ -21,24 +21,14 @@
         @command="opt => sendEnum(cmd, opt)"
       >
         <el-button size="mini" type="primary">
-          {{ cmd.title }}<template v-if="enumLabel(cmd)">：{{ enumLabel(cmd) }}</template><i class="el-icon-arrow-down el-icon--right"></i>
+          {{ cmd.title }}<i class="el-icon-arrow-down el-icon--right"></i>
         </el-button>
         <el-dropdown-menu slot="dropdown">
           <el-dropdown-item
             v-for="(opt, i) in (cmd.options || [])"
             :key="cmd.name + '_' + i"
             :command="opt"
-          >
-            <i
-              class="el-icon-check cmd-check"
-              :style="{
-                color: '#409eff',
-                marginRight: '4px',
-                visibility: enumLabel(cmd) === opt.label ? 'visible' : 'hidden'
-              }"
-            />
-            {{ opt.label }}
-          </el-dropdown-item>
+          >{{ opt.label }}</el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
 
@@ -90,16 +80,11 @@ export default {
   props: {
     device: {
       type: Object
-    },
-    values: {
-      type: Object,
-      default: () => ({})
     }
   },
   data() {
     return {
       cmds: [],
-      enumState: {},  // 枚举指令当前所选 label：{ [cmd.name]: label }
       openInputDialog: false,
       curCmd: undefined,
       inputForm: { value: undefined },
@@ -121,17 +106,7 @@ export default {
       this.$emit('sendData', cmd.name, cmd.value, cmd.format);
     },
     sendEnum(cmd, opt) {
-      this.$set(this.enumState, cmd.name, opt.label);
       this.$emit('sendData', cmd.name, opt.value, cmd.format);
-    },
-    // 枚举当前状态：优先用设备上报值匹配选项，否则用本地最近一次选择
-    enumLabel(cmd) {
-      const item = this.values && this.values[cmd.name];
-      if (item && item.value !== undefined && item.value !== null && item.value !== '') {
-        const hit = (cmd.options || []).find(o => String(o.value) === String(item.value));
-        if (hit) return hit.label;
-      }
-      return this.enumState[cmd.name] || '';
     },
     openInput(cmd) {
       this.curCmd = cmd;
@@ -152,7 +127,6 @@ export default {
       handler() {
         const product = this.device && this.device.product;
         this.cmds = (product && Array.isArray(product.cmd)) ? product.cmd : [];
-        this.enumState = {};
       }
     }
   }

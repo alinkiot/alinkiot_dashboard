@@ -143,16 +143,20 @@ export default {
     },
     doSubscribe() {
       if (!this.client.subscribe) return;
-      const subscriptions = (Array.isArray(this.subscription) ? this.subscription : [this.subscription])
-        .filter(item => item && item.topic)
-        .map(item => ({ topic: item.topic, qos: item.qos || 0 }));
-      const topics = subscriptions.map(item => item.topic);
+      const list = (Array.isArray(this.subscription) ? this.subscription : [this.subscription])
+        .filter(item => item && item.topic);
+      // mqtt.js 4.x 的 subscribe 只接受 字符串 / 字符串数组 / { topic: { qos } } 对象，
+      // 传 [{ topic, qos }] 会在内部对 topic 调 split 而报 "topic.split is not a function"，
+      // 导致订阅失败、收不到设备推送，只能刷新页面重新拉取
+      const subscriptions = {};
+      list.forEach(item => { subscriptions[item.topic] = { qos: item.qos || 0 }; });
+      const topics = Object.keys(subscriptions);
       const removedTopics = this.subscribedTopics.filter(topic => !topics.includes(topic));
       if (removedTopics.length && this.client.unsubscribe) {
         this.client.unsubscribe(removedTopics);
       }
       this.subscribedTopics = topics;
-      if (subscriptions.length) {
+      if (topics.length) {
         this.client.subscribe(subscriptions, error => {
           if (error) {
             console.log('Subscribe error', error);
