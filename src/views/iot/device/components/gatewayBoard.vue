@@ -100,6 +100,12 @@ export default {
   font-size: 17px;
 }
 
+// 标签列固定为 4 个字宽：单元格是 border-box，左右内边距各 10px、边框各 1px
+.gateway-card ::v-deep .el-descriptions-item__label.is-bordered-label {
+  width: calc(4em + 22px);
+  white-space: nowrap;
+}
+
 </style>
 
 <style lang="scss">

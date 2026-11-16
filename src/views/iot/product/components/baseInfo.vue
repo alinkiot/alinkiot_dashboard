@@ -1,7 +1,7 @@
 <template>
   <div>
     <el-row>
-      <el-col :span="product && product.img ? 18:24">
+      <el-col :span="product ? 18 : 24">
         <TableShow
           title = '基本信息'
           v-if="product"
@@ -11,8 +11,8 @@
           :buttons="buttons"
         />
       </el-col>
-      <el-col :span="6" style="text-align: center;" v-if="product && product.img">
-        <ImagePreview style="width:80%;" :src="product.img"/>
+      <el-col :span="6" style="text-align: center;" v-if="product">
+        <ImagePreview style="width:80%;" :src="product.img" empty-text="编辑产品图片" @empty-click="openEditDialog = true"/>
       </el-col>
     </el-row>
     <el-drawer

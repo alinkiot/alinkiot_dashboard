@@ -1,7 +1,7 @@
 <template>
   <div v-loading="loading">
     <el-row v-if="device">
-      <el-col :span="product && product.img ? 18:24">
+      <el-col :span="product ? 18 : 24">
         <TableShow
           title="基本信息"
           :columns="device_columns"
@@ -18,8 +18,8 @@
         />
         <ExtendEditor table="device" :id="id" />
       </el-col>
-      <el-col :span="6" style="text-align: center;" v-if="product && product.img">
-        <ImagePreview style="width:80%;" :src="product.img"/>
+      <el-col :span="6" style="text-align: center;" v-if="product">
+        <ImagePreview style="width:80%;" :src="product.img" empty-text="编辑产品图片" @empty-click="goProductEdit"/>
       </el-col>
     </el-row>
     <el-empty description="找不到该设备" v-else/>
@@ -117,7 +117,7 @@ export default {
       {key: 'createTime', title: '创建时间', type: 'text'},
     ];
     this.product_columns = [
-      {key: 'name', title: '产品名称', type: 'text', click: { icon:'el-icon-link' }},
+      {key: 'name', title: '产品名称', type: 'text', click: { icon:'icon-open-in-box' }},
       {key: 'autoRegister', title: '自动注册', type: 'dict', options: this.dict.type.iot_auto_register},
       {key: 'nodeType', title: '节点类型', type: 'dict', options: this.dict.type.iot_node_type},
       {key: 'netType', title: '网络类型', type: 'dict', options: this.dict.type.iot_net_type},
@@ -144,19 +144,22 @@ export default {
     },
     onProductClick(column) {
       if(column.key === 'name'){
-        // 跳转产品编辑页
-        const project = this.$route.params.project;
-        if(project){
-          this.$router.push({
-            path: '/'  + project + '/device/productEdit',
-            query: {id: this.product.id}
-          });
-        }else{
-          this.$router.push({
-            path: '/device/productEdit',
-            query: {id: this.product.id}
-          });
-        }
+        this.goProductEdit();
+      }
+    },
+    // 跳转产品编辑页
+    goProductEdit() {
+      const project = this.$route.params.project;
+      if(project){
+        this.$router.push({
+          path: '/'  + project + '/device/productEdit',
+          query: {id: this.product.id}
+        });
+      }else{
+        this.$router.push({
+          path: '/device/productEdit',
+          query: {id: this.product.id}
+        });
       }
     },
     async handleKick(device) {

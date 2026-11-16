@@ -317,3 +317,15 @@
 	position: relative;
 	float: right;
 }
+
+/** 「方框 + 右上箭头」跳转图标：Element 自带图标里没有，用 SVG 遮罩实现，颜色跟随文字色。
+    用法：TableShow 的 click: { icon: 'icon-open-in-box' } */
+.icon-open-in-box {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	vertical-align: -0.125em;
+	background-color: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.5 9v3.5a1.5 1.5 0 0 1-1.5 1.5H3.5A1.5 1.5 0 0 1 2 12.5V5a1.5 1.5 0 0 1 1.5-1.5H7'/%3E%3Cpath d='M10 2h4v4M14 2 7.5 8.5'/%3E%3C/svg%3E") no-repeat center / contain;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.5 9v3.5a1.5 1.5 0 0 1-1.5 1.5H3.5A1.5 1.5 0 0 1 2 12.5V5a1.5 1.5 0 0 1 1.5-1.5H7'/%3E%3Cpath d='M10 2h4v4M14 2 7.5 8.5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
