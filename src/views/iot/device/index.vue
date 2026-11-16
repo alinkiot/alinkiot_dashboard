@@ -337,34 +337,75 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// 「设备地址/设备名称」前置下拉：原生下拉箭头被项目样式隐藏了，
-// 这里用伪元素强制画一个向下箭头，明确提示「可下拉」。
+// 「设备地址/设备名称」前置下拉：箭头必须留在左侧下拉框内，
+// 不能因定位参照错误跑到右侧输入框里
 .device-search-input {
-  ::v-deep .el-input-group__prepend {
-    .el-select {
-      width: 96px;
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease;
+
+  // 聚焦态：去掉下拉框、输入框各自的描边光晕，改为整个组合框一起高亮
+  ::v-deep .el-input__inner,
+  ::v-deep .el-input__inner:focus,
+  ::v-deep .el-select .el-input.is-focus .el-input__inner {
+    box-shadow: none !important;
+  }
+
+  ::v-deep .el-input-group__prepend .el-select .el-input__inner {
+    border-color: transparent !important;
+  }
+
+  // 悬停：左右两部分作为一个整体变色，中间分隔线保持不变
+  &:hover {
+    ::v-deep .el-input-group__prepend,
+    ::v-deep .el-input__inner {
+      border-color: #c0c4cc !important;
+    }
+  }
+
+  &:focus-within {
+    // 深色主题的边框画在组合框外层
+    border-color: var(--current-color-focus, var(--current-color, #0071e3)) !important;
+    box-shadow: 0 0 0 3px var(--current-color-ring, rgba(0, 113, 227, 0.16));
+
+    // 浅色主题的边框画在左侧下拉区和右侧输入框上
+    ::v-deep .el-input-group__prepend,
+    ::v-deep .el-input__inner {
+      border-color: var(--current-color-focus, var(--current-color, #0071e3)) !important;
+    }
+  }
+
+  // 中间分隔线 = 右侧输入框的左边框，任何状态下都保持默认颜色
+  &,
+  &:hover,
+  &:focus-within {
+    ::v-deep > .el-input__inner {
+      border-left-color: rgba(0, 0, 0, 0.1) !important;
+    }
+  }
+
+  ::v-deep .el-input-group__prepend .el-select {
+    width: 100px;
+
+    // 全局 .search-form .el-input { width: 200px } 也会作用到下拉框内部的
+    // .el-input，使它比 100px 的下拉框还宽，箭头就溢出到了右侧输入框
+    .el-input {
       position: relative;
+      width: 100%;
+    }
 
-      // 文字右侧留出箭头空间
-      .el-input__inner {
-        padding-left: 10px;
-        padding-right: 22px;
-      }
+    .el-input__inner {
+      padding-left: 10px;
+      padding-right: 24px;
+    }
 
-      // 用伪元素画下拉箭头（▾），紧跟文字右侧
-      &::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        right: 9px;
-        width: 7px;
-        height: 7px;
-        border-right: 1.5px solid #606266;
-        border-bottom: 1.5px solid #606266;
-        transform: translateY(-65%) rotate(45deg);
-        pointer-events: none;
-        z-index: 1;
-      }
+    .el-input__suffix {
+      position: absolute;
+      top: 0;
+      right: 4px;
+      left: auto;
+      height: 100%;
+      display: flex;
+      align-items: center;
     }
   }
 }
