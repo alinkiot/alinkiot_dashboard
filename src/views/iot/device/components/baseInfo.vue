@@ -165,6 +165,7 @@ export default {
     async handleKick(device) {
       if (this.kicking || !checkPermi(["system:device:kick"])) return;
       this.kicking = true;
+      const kickBtn = this.buttons.find(btn => btn.key === 'kickDevice');
       try {
         try {
           await this.$modal.confirm('确认将设备“' + (device.name || device.addr) + '”下线吗？此操作将断开设备当前连接。');
@@ -172,6 +173,7 @@ export default {
           if (error === "cancel" || error === "close") return;
           throw error;
         }
+        if (kickBtn) kickBtn.loading = true;
         await kickDevice({addr: device.addr});
         this.$modal.msgSuccess("设备下线请求已发送");
         await this.getDeviceStatus();
@@ -179,6 +181,7 @@ export default {
         this.$modal.msgError(error && error.message ? error.message : "设备下线或状态刷新失败");
       } finally {
         this.kicking = false;
+        if (kickBtn) kickBtn.loading = false;
       }
     },
     createSecret: function(){
@@ -199,7 +202,7 @@ export default {
       }
       this.buttons = [{icon: 'el-icon-edit-outline', key: 'editDevice', title:'编辑' }];
       if(this.device.online && checkPermi(["system:device:kick"])){
-        this.buttons.push({icon: 'el-icon-close', key: 'kickDevice', title:'下线' })
+        this.buttons.push({icon: 'el-icon-switch-button', key: 'kickDevice', title:'下线', type: 'danger', loading: false })
       }
       this.$emit('onload', {
         device: this.device,

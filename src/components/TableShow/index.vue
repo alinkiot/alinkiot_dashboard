@@ -3,10 +3,22 @@
     <div class="table-show__header" v-if="buttons.length > 0 || title">
       <span class="table-show__title" v-if="title">{{ title }}</span>
       <div class="table-show__actions">
-        <el-button
-          type="text"
-          v-for="btn in buttons" :key="btn.key"
-          :class="btn.icon" @click="doClick(btn)">{{ btn.title }}</el-button>
+        <template v-for="btn in buttons">
+          <!-- 指定了 type（如 danger）的按钮：和普通按钮同样是文字样式，只换颜色，不抢主操作 -->
+          <el-button
+            v-if="btn.type"
+            :key="btn.key"
+            type="text"
+            :icon="btn.icon"
+            :loading="!!btn.loading"
+            :class="'table-show__btn--' + btn.type"
+            @click="doClick(btn)">{{ btn.title }}</el-button>
+          <el-button
+            v-else
+            :key="btn.key"
+            type="text"
+            :class="btn.icon" @click="doClick(btn)">{{ btn.title }}</el-button>
+        </template>
       </div>
     </div>
     <div v-if="columns.length > 0" class="table-show__body">
@@ -158,7 +170,22 @@ export default {
 
   &__actions {
     display: flex;
+    align-items: center;
     gap: 8px;
+
+    // flex gap 已经留了间距，去掉 Element 相邻按钮的默认左外边距
+    .el-button + .el-button {
+      margin-left: 0;
+    }
+  }
+
+  &__btn--danger {
+    color: #909399;
+
+    &:hover,
+    &:focus {
+      color: #f56c6c;
+    }
   }
 
   &__body {

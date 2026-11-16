@@ -111,6 +111,11 @@ function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
       route.children = filterChildren(route.children)
     }
     if (route.component) {
+      // 记下原始组件路径（如 iot/device/index），详情页可据此找到要高亮的父菜单
+      if (typeof route.component === 'string' && !['Layout', 'ParentView', 'InnerLink'].includes(route.component)) {
+        route.meta = route.meta || {}
+        route.meta.component = route.component
+      }
       // Layout ParentView 组件特殊处理
       if (route.component === 'Layout') {
         route.component = Layout
