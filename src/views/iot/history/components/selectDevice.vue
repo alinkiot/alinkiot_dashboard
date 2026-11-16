@@ -223,4 +223,31 @@ $focus-color: var(--current-color-focus, var(--current-color, #0071e3));
     border-right-color: $divider-color !important;
   }
 }
+
+/* 校验失败：整个组合框（前置下拉 + 输入框 + 右侧按钮）外框标红，内部分隔线保持默认。
+   Element 默认只把中间输入框标红；前置区自带 border-right:0、按钮区自带 border-left:0，
+   所以分隔线就是中间输入框的左右边框。 */
+$error-color: #f56c6c;
+
+.select-device ::v-deep .el-form-item.is-error .el-input-group {
+  > .el-input-group__prepend,
+  > .el-input-group__append {
+    border-color: $error-color !important;
+  }
+
+  > .el-input__inner {
+    border-top-color: $error-color !important;
+    border-bottom-color: $error-color !important;
+    border-left-color: $error-color !important;
+    border-right-color: $error-color !important;
+  }
+
+  &.el-input-group--prepend > .el-input__inner {
+    border-left-color: $divider-color !important;
+  }
+
+  &.el-input-group--append > .el-input__inner {
+    border-right-color: $divider-color !important;
+  }
+}
 </style>

@@ -110,6 +110,12 @@
 		margin-bottom: 10px;
 	}
 
+	/* 校验提示文字绝对定位在表单项下方，约 16px 高，10px 下边距放不下，
+	   会被下一行盖住；校验失败时加大下边距 */
+	.el-form-item.is-error {
+		margin-bottom: 22px;
+	}
+
 	.el-input,
 	.el-select {
 		width: 200px;

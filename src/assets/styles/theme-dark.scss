@@ -38,6 +38,18 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
   }
 
+  // 校验失败：上面用 !important 把边框固定成灰色，Element 的红框会被压掉，
+  // 这里显式恢复。输入框组在深色主题下边框画在外层，所以标红外层。
+  .el-form-item.is-error {
+    .el-input__inner,
+    .el-textarea__inner {
+      border-color: #f56c6c !important;
+    }
+    .el-input-group {
+      border-color: #f56c6c !important;
+    }
+  }
+
   .el-input-group__prepend {
     overflow: hidden;
     .el-input__inner {

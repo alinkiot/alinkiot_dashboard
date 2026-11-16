@@ -436,6 +436,28 @@ body.theme-green {
 }
 
 // ------------------------------------------------------------------
+// 11.5 校验失败的输入框组
+//    Element 校验失败时只把中间输入框标红，前置区 / 后置按钮区不变，
+//    看起来红框只框住了一半。这里把前置、后置也标红；
+//    前置区自带 border-right:0、后置区自带 border-left:0，
+//    所以内部分隔线就是中间输入框的左右边框，保持默认颜色。
+// ------------------------------------------------------------------
+.el-form-item.is-error .el-input-group {
+  > .el-input-group__prepend,
+  > .el-input-group__append {
+    border-color: #f56c6c;
+  }
+
+  &.el-input-group--prepend > .el-input__inner {
+    border-left-color: rgba(0, 0, 0, 0.1);
+  }
+
+  &.el-input-group--append > .el-input__inner {
+    border-right-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+// ------------------------------------------------------------------
 // 12. 动效降级
 // ------------------------------------------------------------------
 @media (prefers-reduced-motion: reduce) {
