@@ -117,7 +117,7 @@
                 size="mini"
                 @click="startSelection"
                 v-hasPermi="['system:scene:remove']"
-              >选择删除</el-button>
+              >删除场景</el-button>
               <template v-else>
                 <el-button
                   type="danger"
@@ -770,8 +770,12 @@ export default {
 .scene-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex: 0 0 auto;
+
+  .el-button + .el-button {
+    margin-left: 0;
+  }
 }
 
 .scene-cards {
