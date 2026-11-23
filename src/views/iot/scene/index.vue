@@ -208,16 +208,6 @@
           </el-popover>
         </el-form-item>
         <InputTableSelect  :queryId="scene.project" showColumn="title" label="所属项目" table="project" @selectDone="editProjectDone" prop="project"/>
-        <el-form-item label="类型" prop="category">
-          <el-select v-model="scene.category" placeholder="场景类型">
-            <el-option
-              v-for="dict in dict.type.iot_scene_category"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item label="视图列表：" prop="viewType">
           <el-select
             v-model="scene.viewType"
@@ -280,8 +270,7 @@ export default {
   name: "Scene",
   dicts: [
     'sys_normal_disable',
-    'iot_scene_type',
-    'iot_scene_category'
+    'iot_scene_type'
   ],
   components: {
     IconSelect,

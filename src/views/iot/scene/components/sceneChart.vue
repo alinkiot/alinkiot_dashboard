@@ -1,6 +1,6 @@
 <template>
     <div v-loading="loading">
-        <div v-if="scene.category === 'rxwyj'">
+        <div>
 
             <h1>曲线类型：固定测协算法</h1>
             <el-row :gutter="20">
@@ -376,7 +376,7 @@ export default {
         activeName: {
             handler: function (newVal, oldVal) {
                 console.log(newVal)
-                if (newVal === 'chart') {
+                if (newVal === 'chart' || newVal === 'custom:rxwyj') {
                     this.getSceneData();
                 }
             },
