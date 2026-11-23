@@ -376,7 +376,7 @@ export default {
         activeName: {
             handler: function (newVal, oldVal) {
                 console.log(newVal)
-                if (newVal === 'chart' || newVal === 'custom:rxwyj') {
+                if (newVal === 'custom:rxwyj') {
                     this.getSceneData();
                 }
             },

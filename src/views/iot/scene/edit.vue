@@ -99,7 +99,7 @@
                   :scene="scene"
                   :scene_key="item.name"
                   :activeName="activeName"
-                  v-else-if="item.name === 'chart' || item.name === 'custom:rxwyj'"
+                  v-else-if="item.name === 'custom:rxwyj'"
                 />
                 <SphereViewer
                   @click="deviceClick"
