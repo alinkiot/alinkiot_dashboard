@@ -36,6 +36,15 @@
           </template>
           <template v-else-if="column.type === 'dict'">
             <dict-tag :options="column.options" :value="getValue(column)"/>
+            <el-popover
+              v-if="column.tip === 'remark'"
+              placement="top"
+              :title="column.title + '说明'"
+              width="280"
+              trigger="hover"
+              :content="getDictRemark(column) || '暂无说明'">
+              <el-button slot="reference" type="text" icon="el-icon-question" class="table-show__tip-btn"/>
+            </el-popover>
           </template>
           <template v-else-if="checkEmpty(column)">--</template>
           <template v-else>
@@ -110,6 +119,13 @@ export default {
     },
     doClick(column) {
       this.$emit('click', column);
+    },
+    // 取当前字典值对应项的 remark 说明（字典原始数据保存在 option.raw 里）
+    getDictRemark(column) {
+      const value = this.getValue(column);
+      const options = column.options || [];
+      const hit = options.find(o => String(o.value) === String(value));
+      return hit && hit.raw ? hit.raw.remark : undefined;
     },
     selectMapDone(data) {
       const name = data.name;
@@ -227,6 +243,12 @@ export default {
   &__secret {
     letter-spacing: 2px;
     margin-right: 4px;
+  }
+
+  &__tip-btn {
+    padding: 0;
+    font-size: 14px;
+    color: #909399;
   }
 }
 </style>

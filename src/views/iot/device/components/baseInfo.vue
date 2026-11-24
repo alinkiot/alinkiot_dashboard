@@ -122,7 +122,7 @@ export default {
       {key: 'nodeType', title: '节点类型', type: 'dict', options: this.dict.type.iot_node_type},
       {key: 'netType', title: '网络类型', type: 'dict', options: this.dict.type.iot_net_type},
       {key: 'category', title: '产品分类', type: 'dict', options: this.dict.type.iot_product_mgr},
-      {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id},
+      {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'remark'},
       {key: 'status', title: '是否停用', type: 'dict', options: this.dict.type.sys_normal_disable},
       {key: 'doc', title: '帮助文档', type: 'href'}
     ];
