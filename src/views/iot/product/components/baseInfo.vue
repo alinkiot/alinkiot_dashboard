@@ -96,7 +96,7 @@ export default {
         {key: 'pk', title: '产品Key', type: 'text', click: { icon:'el-icon-refresh' }},
         {key: 'ps', title: '产品密钥', type: 'secret', click: { icon:'el-icon-refresh' }},
         {key: 'category', title: '产品分类', type: 'dict', options: this.dict.type.iot_product_mgr},
-        {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id},
+        {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'remark'},
         {key: 'status', title: '是否停用', type: 'dict', options: this.dict.type.sys_normal_disable},
         {key: 'doc', title: '帮助文档', type: 'href'}
       ];
