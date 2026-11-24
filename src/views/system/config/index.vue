@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="search-form">
-      <el-form-item label="所属项目" prop="project">
+      <el-form-item label="所属项目" prop="project" class="site-project-item">
         <el-select
           v-model="selectedProjectId"
           placeholder="请选择项目"
@@ -492,6 +492,12 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+/* 站点设置搜索区只有"所属项目"一个下拉框，没有动作按钮，
+   覆盖全局 .search-form > .el-form-item:last-child 的 margin-left:auto，避免被推到最右侧 */
+.search-form > .site-project-item:last-child {
+  margin-left: 0;
+}
+
 .config-layout {
   display: flex;
   gap: 12px;
