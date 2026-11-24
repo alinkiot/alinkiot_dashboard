@@ -260,8 +260,8 @@ body.theme-green {
     .el-submenu__title {
       height: 46px;
       line-height: 46px;
-      // 一级文字起点在 52px（图标 20 + 16 + 间距 16），二级再进一级到 56px
-      padding-left: 56px !important;
+      // 一级文字起点在 52px（图标 20 + 16 + 间距 16），二级整体再左收一点
+      padding-left: 48px !important;
       font-size: 13px;
     }
   }
@@ -273,7 +273,8 @@ body.theme-green {
     &::before {
       content: '';
       position: absolute;
-      left: 32px;
+      // 指示条贴近二级文字（文字起点 48px），跟随文字一起左移
+      left: 36px;
       top: 50%;
       width: 3px;
       height: 16px;
