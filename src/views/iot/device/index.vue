@@ -220,6 +220,8 @@ export default {
     getList() {
       const query = JSON.parse(JSON.stringify(this.queryParams));
       delete query['device'];
+      // 设备按创建时间倒序：新设备排在最前
+      query['orderBy[desc]'] = 'createTime';
       if(this.select === 'addr'){
         if(this.queryParams.device) query['addr[like]'] = this.queryParams.device;
       }else{
