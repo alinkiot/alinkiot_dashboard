@@ -4,8 +4,6 @@
     <el-tabs v-model="activeName" @tab-click="handleTabClick">
       <el-tab-pane label="产品详情" name="baseInfo">
         <BaseInfo :id="productId" @onload="onload"></BaseInfo>
-      </el-tab-pane>
-      <el-tab-pane label="扩展参数" name="extendTab">
         <ExtendEditor table="product" :id="productId" />
       </el-tab-pane>
       <el-tab-pane label="功能定义" name="thingTab">
