@@ -178,6 +178,17 @@ export default {
         query: { id: this.product.id, tab: 'baseInfo' }
       });
     },
+    // 解析产品级自定义 Topic（兼容 JSON 字符串 / 数组）
+    parseCustomTopics(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        return [];
+      }
+    },
     updateTopic() {
       const addr = this.device.addr || '${addr}';
       const project = this.project || '${projectId}';
@@ -195,6 +206,16 @@ export default {
         { topic: `s/out/${project}/${scene}/${addr}`, action: 'publish', desc: '场景发布设备上行消息' },
         { topic: 'p/in', action: 'subscribe', desc: '平台订阅，如设备控制，数据同步' }
       );
+      // 产品级自定义 Topic：把 {addr} 替换为真实设备地址
+      const custom = this.parseCustomTopics(this.product && this.product.topic);
+      custom.forEach(item => {
+        if (!item || !item.topic) return;
+        topics.push({
+          topic: String(item.topic).replace(/\{addr\}/g, addr),
+          action: item.action === 'publish' ? 'publish' : 'subscribe',
+          desc: item.desc || '自定义 Topic'
+        });
+      });
       this.tabTopic = topics;
     }
   },
@@ -204,6 +225,12 @@ export default {
     },
     activeProtocol() {
       this.updateTopic();
+    },
+    product: {
+      deep: true,
+      handler() {
+        this.updateTopic();
+      }
     }
   }
 };

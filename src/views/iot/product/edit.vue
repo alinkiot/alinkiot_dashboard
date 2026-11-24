@@ -14,6 +14,9 @@
       <el-tab-pane label="控制指令" name="controlTab">
         <ControlEditor table="product" :id="productId" />
       </el-tab-pane>
+      <el-tab-pane label="Topic 列表" name="topicTab">
+        <TopicEditor table="product" :id="productId" />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -23,6 +26,7 @@ import InputTableSelect from "@/components/InputTableSelect";
 import ThingEditor from "./components/thingEditor";
 import ExtendEditor from "./components/extendEditor";
 import ControlEditor from "./components/controlEditor";
+import TopicEditor from "./components/topicEditor";
 import {updateObject} from "@/api/iot/table";
 import BaseInfo from "@/views/iot/product/components/baseInfo.vue";
 
@@ -42,6 +46,7 @@ export default {
     ThingEditor,
     ExtendEditor,
     ControlEditor,
+    TopicEditor,
     ImageUpload
   },
   data() {
