@@ -92,7 +92,8 @@ const PROTOCOL_CONFIG_KEY = 'protocolConfig';
 // 协议标识的定制说明：value / label / 别名均可命中
 const protoTip = extra => [
   '<div class="protocol-tip">',
-  '<p>该协议需在产品「扩展字段」中新增一条 JSON 字段 <code>' + PROTOCOL_CONFIG_KEY + '</code>，把设备上报的 JSON 转成标准 JSON（完整转换定义）。</p>',
+  '<p>该协议需在产品「扩展字段」中新增一条 <b>JSON 类型</b>字段 <code>' + PROTOCOL_CONFIG_KEY + '</code>，把设备上报的 JSON 转成标准 JSON（完整转换定义）。</p>',
+  '<p><b>填写方式</b>：在扩展字段编辑弹窗里直接输入下面的 JSON 对象（点「JSON显示」可美化），保存时会自动按 base64 编码存储，后端读取时自动解码，无需手工编码。</p>',
   '<p><b>配置格式</b>：值为合法 JSON 对象，每个标准字段是一个定义：<code>"字段名": {"value": 取值路径, "ts": 时间定义}</code>，其中 <code>ts</code> 可省略：</p>',
   '<pre>{\n  "temperature": {\n    "value": "#HOTWATER/items/1/values/SteamFlow",\n    "ts": { "ref": "${CURRENT_TIME}" }\n  },\n  "energy": { "value": "#Energy" },\n  "$sub_addr": { "value": "#sn" }\n}</pre>',
   '<p><b># 路径规范</b>（用于 value / ref）：</p>',
