@@ -15,6 +15,7 @@
           :columns="product_columns"
           :item="product"
           @click="onProductClick"
+          @tip-click="onTipClick"
         />
         <ExtendEditor table="device" :id="id" />
       </el-col>
@@ -23,6 +24,9 @@
       </el-col>
     </el-row>
     <el-empty description="找不到该设备" v-else/>
+    <el-dialog title="协议说明" :visible.sync="tipDialogOpen" width="520px" append-to-body>
+      <div v-html="tipContent" class="protocol-tip-dialog"></div>
+    </el-dialog>
     <el-drawer
       title="编辑设备"
       :visible.sync="openEditDialog"
@@ -93,6 +97,8 @@ export default {
       device: undefined,
       product: undefined,
       online: undefined,
+      tipDialogOpen: false,
+      tipContent: '',
       openEditDialog: false,
       buttons: [],
       keyFormRule:{
@@ -122,7 +128,7 @@ export default {
       {key: 'nodeType', title: '节点类型', type: 'dict', options: this.dict.type.iot_node_type},
       {key: 'netType', title: '网络类型', type: 'dict', options: this.dict.type.iot_net_type},
       {key: 'category', title: '产品分类', type: 'dict', options: this.dict.type.iot_product_mgr},
-      {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'remark'},
+      {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'protocol'},
       {key: 'status', title: '是否停用', type: 'dict', options: this.dict.type.sys_normal_disable},
       {key: 'doc', title: '帮助文档', type: 'href'}
     ];
@@ -146,6 +152,11 @@ export default {
       if(column.key === 'name'){
         this.goProductEdit();
       }
+    },
+    // 协议问号点击：打开说明弹窗
+    onTipClick({ content }) {
+      this.tipContent = content;
+      this.tipDialogOpen = true;
     },
     // 跳转产品编辑页
     goProductEdit() {

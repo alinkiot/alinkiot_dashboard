@@ -8,6 +8,7 @@
           :columns="product_columns"
           :item="product"
           @click="onClick"
+          @tip-click="onTipClick"
           :buttons="buttons"
         />
       </el-col>
@@ -15,6 +16,9 @@
         <ImagePreview style="width:80%;" :src="product.img" empty-text="编辑产品图片" @empty-click="openEditDialog = true"/>
       </el-col>
     </el-row>
+    <el-dialog title="协议说明" :visible.sync="tipDialogOpen" width="520px" append-to-body>
+      <div v-html="tipContent" class="protocol-tip-dialog"></div>
+    </el-dialog>
     <el-drawer
       title="编辑产品"
       :visible.sync="openEditDialog"
@@ -74,6 +78,8 @@ export default {
       secret: { key : '', value : '' },
       product: undefined,
       openEditDialog: false,
+      tipDialogOpen: false,
+      tipContent: '',
       buttons: [
         {icon: 'el-icon-edit-outline', key: 'editProduct', title:'编辑' }
       ],
@@ -96,13 +102,18 @@ export default {
         {key: 'pk', title: '产品Key', type: 'text', click: { icon:'el-icon-refresh' }},
         {key: 'ps', title: '产品密钥', type: 'secret', click: { icon:'el-icon-refresh' }},
         {key: 'category', title: '产品分类', type: 'dict', options: this.dict.type.iot_product_mgr},
-        {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'remark'},
+        {key: 'protocol', title: '协议标识', type: 'dict', options: this.dict.type.iot_protocol_id, tip: 'protocol'},
         {key: 'status', title: '是否停用', type: 'dict', options: this.dict.type.sys_normal_disable},
         {key: 'doc', title: '帮助文档', type: 'href'}
       ];
     this.load();
   },
   methods: {
+    // 协议问号点击：打开说明弹窗
+    onTipClick({ content }) {
+      this.tipContent = content;
+      this.tipDialogOpen = true;
+    },
     onClick(column) {
       console.log(column);
       if(column.key === 'editProduct'){
