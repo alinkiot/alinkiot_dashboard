@@ -18,6 +18,9 @@
             <el-input v-model="form.name" placeholder="请输入字段标识"/>
           </el-form-item>
         </template>
+        <el-form-item v-else label="字段标识">
+          <span class="form-readonly">{{ form.name }}</span>
+        </el-form-item>
         <el-form-item label="值形式" prop="valueType" v-if="!isPresetField">
           <el-radio-group v-model="form.valueType" size="small">
             <el-radio-button label="input">输入型</el-radio-button>
@@ -54,7 +57,16 @@
             />
           </el-select>
           <el-input v-else-if="form.type==='integer'" v-model.number="form.value" placeholder="请输入数值"/>
-          <el-input v-else v-model="form.value" placeholder="请输入数据内容"/>
+          <el-input
+            v-else
+            v-model="form.value"
+            type="textarea"
+            :autosize="{ minRows: 3, maxRows: 12 }"
+            placeholder="请输入数据内容（支持多行，如 JSON 配置）"/>
+          <div v-if="form.valueType !== 'enum' && form.type !== 'integer'" class="value-tools">
+            <el-button size="mini" type="text" @click="formatValueAsJson">JSON显示</el-button>
+            <el-button size="mini" type="text" @click="formatValueAsText">文本显示</el-button>
+          </div>
         </el-form-item>
         <el-form-item>
           <el-button size="mini" type="primary" @click="addExtendDone">确定</el-button>
@@ -135,9 +147,42 @@ export default {
             const hit = options.find(o => String(o.value) === String(value));
             return hit ? hit.label : value;
           };
+        } else if (row.type === 'json') {
+          // JSON 类型：列表里显示占位符，点编辑查看
+          item.format = () => '<JSON>';
+        } else {
+          // 普通字段：列表里只做预览，长内容（如 JSON 配置）单行截断，避免撑乱布局
+          item.format = (key, value) => this.previewValue(value);
         }
         this.columns.push(item)
       })
+    },
+    // JSON显示：把当前值按 JSON 美化（带缩进）；非合法 JSON 则提示，不改内容
+    formatValueAsJson() {
+      const v = this.form.value;
+      if (v === undefined || v === null || String(v).trim() === '') return;
+      try {
+        this.$set(this.form, 'value', JSON.stringify(JSON.parse(v), null, 2));
+      } catch (e) {
+        this.$modal.msgWarning('当前内容不是合法 JSON，无法格式化');
+      }
+    },
+    // 文本显示：把当前值压成紧凑单行；非合法 JSON 则仅压缩空白
+    formatValueAsText() {
+      const v = this.form.value;
+      if (v === undefined || v === null || String(v).trim() === '') return;
+      try {
+        this.$set(this.form, 'value', JSON.stringify(JSON.parse(v)));
+      } catch (e) {
+        this.$set(this.form, 'value', String(v).replace(/\s+/g, ' ').trim());
+      }
+    },
+    // 列表值预览：换行转空格、多余空白压缩、超长截断，避免长 JSON 撑乱布局
+    previewValue(value) {
+      if (value === null || value === undefined) return value;
+      const str = String(value).replace(/\s+/g, ' ').trim();
+      const max = 40;
+      return str.length > max ? str.slice(0, max) + '…' : str;
     },
     // 从 config 数组中提取扩展字段（普通 { name, title, type, value } 元素）
     splitConfig(cfg) {
@@ -166,8 +211,18 @@ export default {
           this.isCreate = false;
           const src = arr[0];
           // 深拷贝，避免未保存前直接改到列表里的引用；补默认 valueType/options
+          let formValue = src.value;
+          // JSON 类型：base64 解码后编辑
+          if (src.type === 'json' && typeof formValue === 'string') {
+            try {
+              formValue = decodeURIComponent(escape(atob(formValue)));
+            } catch (e) {
+              // 解码失败，保持原值
+            }
+          }
           this.form = {
             ...src,
+            value: formValue,
             valueType: src.valueType || 'input',
             options: (src.options || []).map(o => ({ label: o.label, value: o.value }))
           };
@@ -226,14 +281,31 @@ export default {
       });
       return changed;
     },
+    // 解析 config：后端返回字符串，需要 JSON.parse
+    parseConfig(raw) {
+      if (!raw) return [];
+      // 已经是数组，直接返回
+      if (Array.isArray(raw)) return raw;
+      // 字符串需要解析
+      if (typeof raw === 'string') {
+        try {
+          const v = JSON.parse(raw);
+          return Array.isArray(v) ? v : [];
+        } catch (e) {
+          console.warn('config 解析失败，原始内容：', raw);
+          return [];
+        }
+      }
+      return [];
+    },
     getExtend(callback) {
       getObject(this.table, this.id).then(response => {
         const o = response.data;
-        const rawCfg = o.config ? JSON.parse(o.config) : [];
+        const rawCfg = this.parseConfig(o.config);
         const { extend: devExtend } = this.splitConfig(rawCfg);
         if(this.table === 'device' && o.product){
           getObject('product', o.product).then(response => {
-            const rawProductCfg = response.data.config ? JSON.parse(response.data.config) : [];
+            const rawProductCfg = this.parseConfig(response.data.config);
             const { extend: productExtend } = this.splitConfig(rawProductCfg);
             productExtend.map(item => {
               const arr = devExtend.filter(i => { return i.name === item.name });
@@ -315,6 +387,16 @@ export default {
         if(this.form.type === 'float'){
           value = parseFloat(value);
         }
+        // JSON 类型：值用 base64 编码存储，避免特殊字符破坏 config 结构
+        if(this.form.type === 'json' && typeof value === 'string'){
+          try {
+            // 先校验是否为合法 JSON
+            JSON.parse(value);
+            value = btoa(unescape(encodeURIComponent(value)));
+          } catch (e) {
+            // 非合法 JSON，直接保存原字符串
+          }
+        }
         const row = {
           title: this.form.title,
           name: this.form.name,
@@ -348,10 +430,12 @@ export default {
           id: this.id,
           config: JSON.stringify(this.buildConfig())
         };
+        const that = this;
         updateObject(this.table, data).then(response => {
-          this.open = false;
-          this.createData();
-          this.$modal.msgSuccess(isCreate ? '创建成功!' : '更新成功!');
+          that.open = false;
+          that.getExtend(function() {
+            that.$modal.msgSuccess(isCreate ? '创建成功!' : '更新成功!');
+          });
         });
       })
     }
@@ -364,6 +448,11 @@ export default {
   margin-top: 4px;
   font-size: 12px;
   color: #909399;
+}
+
+.form-readonly {
+  color: #606266;
+  font-size: 14px;
 }
 
 .enum-opt {
@@ -384,6 +473,16 @@ export default {
     color: #f56c6c;
     padding: 0;
     font-size: 18px;
+  }
+}
+
+.value-tools {
+  margin-top: 4px;
+  text-align: right;
+
+  .el-button--mini {
+    padding: 0;
+    margin-left: 12px;
   }
 }
 

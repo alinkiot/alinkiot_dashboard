@@ -195,29 +195,18 @@ export default {
       return tip + '<div class="protocol-tip__cur"><p>当前产品已配置：</p><pre>' +
         this.escapeHtml(conf) + '</pre></div>';
     },
-    // 从产品 item.config（JSON 字符串 [{name,value}]）中取 protocolConfig 的值
+    // 从产品 item.config（[{name,value}] 数组）中取 protocolConfig 的值，当字符串原样展示
     getProtocolConfig() {
       const raw = this.item && this.item.config;
       if (!raw) return '';
-      try {
-        const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        if (!Array.isArray(arr)) return '';
-        const hit = arr.find(o => o && o.name === PROTOCOL_CONFIG_KEY);
-        if (!hit) return '';
-        let val = hit.value;
-        if (val === undefined || val === null || val === '') return '';
-        // 值本身可能是 JSON 字符串，格式化展示得更清晰
-        if (typeof val === 'string') {
-          try {
-            val = JSON.stringify(JSON.parse(val), null, 2);
-          } catch (e) { /* 非合法 JSON，原样展示 */ }
-        } else {
-          val = JSON.stringify(val, null, 2);
-        }
-        return String(val);
-      } catch (e) {
-        return '';
+      let arr = raw;
+      if (typeof raw === 'string') {
+        try { arr = JSON.parse(raw); } catch (e) { return ''; }
       }
+      if (!Array.isArray(arr)) return '';
+      const hit = arr.find(o => o && o.name === PROTOCOL_CONFIG_KEY);
+      if (!hit || hit.value === undefined || hit.value === null || hit.value === '') return '';
+      return String(hit.value);
     },
     // 简单 HTML 转义，避免展示的 JSON 内容破坏弹窗结构
     escapeHtml(str) {
