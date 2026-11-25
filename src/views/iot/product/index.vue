@@ -9,6 +9,16 @@
             @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <el-form-item label="协议标识" prop="protocol">
+        <el-select v-model="queryParams.protocol" placeholder="请选择协议" clearable filterable>
+          <el-option
+              v-for="dict in dict.type.iot_protocol_id"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="禁用状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="状态" clearable>
           <el-option
@@ -134,7 +144,7 @@ import ProductForm from "@/views/iot/product/components/productForm.vue";
 
 export default {
   name: "Product",
-  dicts: ['sys_normal_disable','iot_node_type', 'iot_net_type', 'iot_auto_register', 'iot_product_type'],
+  dicts: ['sys_normal_disable','iot_node_type', 'iot_net_type', 'iot_auto_register', 'iot_product_type', 'iot_protocol_id'],
   components: {
     DeviceForm,
     InputTableSelect,
@@ -166,7 +176,8 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        status: "0"
+        status: "0",
+        protocol: undefined
       },
       // 表单参数
       form: {}
@@ -192,6 +203,9 @@ export default {
       }
       if(this.queryParams.name) {
         queryParams['name[like]'] = this.queryParams.name;
+      }
+      if(this.queryParams.protocol) {
+        queryParams.protocol = this.queryParams.protocol;
       }
       queryObject(this.table, queryParams).then(response => {
         const rows = response.rows;
