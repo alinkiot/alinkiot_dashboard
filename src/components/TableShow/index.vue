@@ -156,8 +156,19 @@ export default {
     },
     // 字段说明：协议标识命中内置定制说明则用它，否则取字典项的 remark（都有则弹窗都有内容）
     getTipContent(column) {
-      const value = this.getValue(column);
       if (column.tip !== 'protocol') return this.getDictRemark(column) || '';
+      const value = this.getValue(column);
+      const hit = (column.options || []).find(o => String(o.value) === String(value));
+      const name = hit && hit.label ? hit.label : value;
+      const id = hit ? hit.value : value;
+      return '<div class="protocol-tip protocol-tip__info">' +
+        '<p><b>协议名称：</b>' + this.escapeHtml(name === undefined || name === null ? '--' : name) + '</p>' +
+        '<p><b>协议标识：</b><code>' + this.escapeHtml(id === undefined || id === null ? '--' : id) + '</code></p>' +
+        '<p><b>说明：</b></p></div>' + this.getProtocolDesc(column);
+    },
+    // 协议说明正文
+    getProtocolDesc(column) {
+      const value = this.getValue(column);
       // 协议值可能是字面量（mqtt-json）、字典 value（如数字 ID），label 则是 "JSON Over TCP" 等
       // 逐个尝试：原始值 + 对应字典项的 value/label/raw，再用别名归一化匹配内置说明
       const candidates = [value];
@@ -180,13 +191,8 @@ export default {
       }
       // 其它协议：展示字典 remark；没填则给一句默认说明，保证点击都有内容
       const remark = this.getDictRemark(column);
-      const label = hit && hit.label ? hit.label : value;
-      if (remark) {
-        return '<div class="protocol-tip"><p>协议：<code>' + this.escapeHtml(label) +
-          '</code></p><p>' + this.escapeHtml(remark) + '</p></div>';
-      }
-      return '<div class="protocol-tip"><p>协议：<code>' + this.escapeHtml(label) +
-        '</code></p><p>该协议暂无特别说明。</p></div>';
+      return '<div class="protocol-tip"><p>' +
+        (remark ? this.escapeHtml(remark) : '该协议暂无特别说明。') + '</p></div>';
     },
     // 若产品已配置 protocolConfig，把实际 JSON 内容追加到说明里展示
     withCurrentConfig(key) {
@@ -369,6 +375,7 @@ export default {
     white-space: pre-wrap;
     word-break: break-all;
   }
+  &__info { margin-bottom: 6px; }
   &__cur {
     margin-top: 10px;
     padding-top: 8px;
