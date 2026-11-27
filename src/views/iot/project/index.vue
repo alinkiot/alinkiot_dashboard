@@ -218,7 +218,7 @@ export default {
     this.currProject = getProject(project);
     this.column = [
       {label:'项目名称', key:'title', isSearch: true, regx: true},
-      {label:'所属公司', key:'company', isSearch: true, regx: true}
+      {label:'所属公司', key:'company'}
     ];
     this.getList();
   },

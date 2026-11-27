@@ -21,7 +21,24 @@
     </el-form>
     <el-row :gutter="10" class="mb8">
       <el-col :span="12">
-        <div class="scene-toolbar-title">场景管理</div>
+        <el-form size="small" :inline="true" class="scene-project-filter-form" @submit.native.prevent>
+          <el-form-item label="所属项目">
+            <el-select
+              v-model="filterProjectId"
+              placeholder="全部项目"
+              clearable
+              filterable
+              @change="handleProjectFilter"
+            >
+              <el-option
+                v-for="item in projectList"
+                :key="item.id"
+                :label="item.title"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
       </el-col>
       <right-toolbar
         class="scene-toolbar-actions"
@@ -37,11 +54,11 @@
       <aside class="scene-project-menu">
         <div class="scene-project-menu-title">
           <span>项目</span>
-          <span class="scene-project-count">{{ projectList.length }}</span>
+          <span class="scene-project-count">{{ visibleProjects.length }}</span>
         </div>
-        <el-menu :default-active="activeProjectKey" :default-openeds="defaultOpenedProjects" unique-opened @select="handleMenuSelect" @open="handleProjectOpen">
+        <el-menu :key="menuKey" :default-active="activeProjectKey" :default-openeds="defaultOpenedProjects" unique-opened @select="handleMenuSelect" @open="handleProjectOpen">
           <el-submenu
-            v-for="item in projectList"
+            v-for="item in visibleProjects"
             :key="String(item.id)"
             :index="String(item.id)"
             class="scene-project-submenu"
@@ -297,6 +314,10 @@ export default {
       scene: { },
       project: {},
       projectList: [],
+      // 按项目过滤：有值时左侧只显示该项目
+      filterProjectId: '',
+      // el-menu 的 default-openeds 只在挂载时生效，切换过滤时通过改 key 重建菜单
+      menuKey: 0,
       scenesMap: {},
       loadingProjects: {},
       defaultOpenedProjects: [],
@@ -333,13 +354,20 @@ export default {
     },
     activeProjectTitle() {
       return this.project.title || '项目';
+    },
+    visibleProjects() {
+      if (this.filterProjectId === '' || this.filterProjectId === undefined || this.filterProjectId === null) {
+        return this.projectList;
+      }
+      return this.projectList.filter(item => String(item.id) === String(this.filterProjectId));
     }
   },
   async created() {
-    // 从项目进入时，默认选中并展开当前项目
+    // 从项目进入时，默认按当前项目过滤，并选中、展开该项目
     const current = await this.$store.dispatch('settings/ResolveProject');
     if (current) {
       this.project = current;
+      this.filterProjectId = current.id;
       this.defaultOpenedProjects = [String(current.id)];
     }
     this.getProjects();
@@ -543,6 +571,20 @@ export default {
       }
       // 场景 tip 条目（loading/empty）不做任何处理
     },
+    handleProjectFilter(projectId) {
+      if (projectId !== '' && projectId !== undefined && projectId !== null) {
+        const target = this.projectList.find(item => String(item.id) === String(projectId));
+        if (target && String(this.project.id) !== String(target.id)) {
+          this.selectedScene = null;
+          this.project = target;
+          this.queryParams.pageNum = 1;
+          this.getList();
+        }
+      }
+      // 展开当前选中的项目；清空过滤时恢复显示全部项目，保持当前项目不变
+      this.defaultOpenedProjects = this.project.id ? [String(this.project.id)] : [];
+      this.menuKey += 1;
+    },
     handleProjectTitleClick(item) {
       this.selectedScene = null;
       if (this.project.id !== item.id) {
@@ -576,11 +618,8 @@ export default {
   gap: 16px;
 }
 
-.scene-toolbar-title {
-  padding: 7px 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 20px;
+.scene-project-filter-form ::v-deep .el-form-item {
+  margin-bottom: 0;
 }
 
 ::v-deep .scene-toolbar-actions {

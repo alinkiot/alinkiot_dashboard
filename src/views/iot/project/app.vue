@@ -81,14 +81,6 @@
             @click="showSyncDlg(scope.row)"
             v-hasPermi="['system:project:sync']"
           >同步</el-button>
-          <el-button
-              size="mini"
-              type="text"
-              icon="el-icon-delete"
-              style="color:red;"
-              @click="handleDelete(scope.row)"
-              v-hasPermi="['system:app:remove']"
-          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
