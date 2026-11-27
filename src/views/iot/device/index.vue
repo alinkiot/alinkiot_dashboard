@@ -7,24 +7,6 @@
       <InputTableSelect showColumn="name" label="所属产品" :read="isRead('product')"
                         :queryId="product.id"  table="product"
                         @selectDone="selectProductDone"/>
-      <el-form-item label="设备类型" prop="nodeType">
-        <el-select v-model="nodeType" multiple  placeholder="设备类型" disabled v-if="isRead('nodeType')">
-          <el-option
-            v-for="dict in dict.type.iot_node_type"
-            :key="dict.value"
-            :label="dict.label"
-            :value="dict.value"
-          />
-        </el-select>
-        <el-select v-model="nodeType" multiple  placeholder="设备类型" clearable v-else>
-          <el-option
-              v-for="dict in dict.type.iot_node_type"
-              :key="dict.value"
-              :label="dict.label"
-              :value="dict.value"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item>
         <el-input placeholder="请输入" v-model="queryParams.device" clearable class="device-search-input">
           <el-select v-model="select" slot="prepend" class="device-search-prepend">
