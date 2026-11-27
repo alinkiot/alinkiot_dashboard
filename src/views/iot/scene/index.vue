@@ -690,6 +690,40 @@ export default {
     }
   }
 
+  // 树形连接线：竖线贯穿同级节点，末节点竖线只到中点，再接一条横线指向节点
+  ::v-deep .el-submenu.scene-project-submenu > .el-menu .el-menu-item {
+    position: relative;
+    padding-left: 40px !important;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      background: rgba(127, 127, 127, 0.4);
+      pointer-events: none;
+    }
+
+    // 竖线（margin 上下各 2px，向外延伸以保证相邻节点连续）
+    &::before {
+      left: 22px;
+      top: -2px;
+      bottom: -2px;
+      width: 1px;
+    }
+
+    // 横线
+    &::after {
+      left: 22px;
+      top: 50%;
+      width: 10px;
+      height: 1px;
+    }
+
+    &:last-child::before {
+      bottom: 50%;
+    }
+  }
+
   ::v-deep .el-menu-item.scene-submenu-tip {
     padding-left: 32px !important;
     height: 32px;
@@ -942,6 +976,13 @@ export default {
     ::v-deep .el-menu-item {
       width: auto;
       flex: 0 0 auto;
+    }
+
+    ::v-deep .el-submenu.scene-project-submenu > .el-menu .el-menu-item {
+      &::before,
+      &::after {
+        display: none;
+      }
     }
   }
 
