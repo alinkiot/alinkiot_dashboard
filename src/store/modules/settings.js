@@ -1,6 +1,7 @@
 import defaultSettings from '@/settings'
 import { siteInfo} from '@/api/login'
 import { getProject } from "@/api/iot/system";
+import { queryObject } from '@/api/iot/table'
 // Apple 主题预设与内置主题生成逻辑统一维护在 @/utils/builtinThemes
 import { appleThemePresets, buildBuiltinThemes } from '@/utils/builtinThemes'
 
@@ -53,6 +54,8 @@ const state = {
   sidebarLogo: sidebarLogo,
   dynamicTitle: dynamicTitle,
   project: undefined,
+  // 当前项目的完整记录（含 id、title），从项目进入时由 ResolveProject 填充
+  projectInfo: undefined,
   siteInfo: undefined,
   currentTheme: undefined
 }
@@ -143,7 +146,33 @@ const mutations = {
   }
 }
 
+// 同一项目只查询一次，避免多个页面同时初始化时重复请求
+let projectPromise = null
+let projectPromiseName
+
 const actions = {
+  // 把 URL 里的项目标识解析成项目记录。未从项目进入、或查询失败时返回 undefined，调用方按不过滤处理
+  ResolveProject({ state }) {
+    const name = state.project
+    if (!name) {
+      state.projectInfo = undefined
+      return Promise.resolve(undefined)
+    }
+    if (projectPromise && projectPromiseName === name) {
+      return projectPromise
+    }
+    projectPromiseName = name
+    projectPromise = queryObject('project', { name, pageNum: 1, pageSize: 1 }).then(res => {
+      const row = res && res.rows && res.rows.find(item => item.name === name)
+      state.projectInfo = row
+      if (!row) projectPromise = null
+      return row
+    }).catch(() => {
+      projectPromise = null
+      return undefined
+    })
+    return projectPromise
+  },
   // 获取站点信息
   SiteInfo({ commit }, project) {
     return new Promise((resolve) => {
