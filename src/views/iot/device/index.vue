@@ -154,7 +154,7 @@ export default {
 
     };
   },
-  created() {
+  async created() {
     const projectId = this.$route.query.project;
     const productId = this.$route.query.product;
     const status = this.$route.query.status;
@@ -174,6 +174,14 @@ export default {
     if(nodeType){
       this.nodeType = nodeType.split(',');
       this.fixParams.push({key:'nodeType', 'value': this.nodeType});
+    }
+    // 从项目进入且没有显式指定项目时，默认只看当前项目的设备
+    if(!projectId){
+      const current = await this.$store.dispatch('settings/ResolveProject');
+      if(current){
+        this.project = current;
+        this.fixParams.push({key:'project', 'value': current.id});
+      }
     }
     this.getList();
   },
