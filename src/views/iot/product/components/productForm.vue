@@ -45,7 +45,7 @@
           <el-option
             v-for="dict in dict.type.iot_protocol_id"
             :key="dict.value"
-            :label="dict.label"
+            :label="`${dict.label}(${dict.value})`"
             :value="dict.value"
           />
         </el-select>
