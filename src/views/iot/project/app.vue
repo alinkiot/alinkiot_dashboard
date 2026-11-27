@@ -123,29 +123,10 @@
         <el-form-item label="备注" prop="remark">
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
         </el-form-item>
-        <el-form-item v-hasPermi="['system:app:remote']" label="远程工具">
-          <el-checkbox v-model="remote.enable">允许使用 erl-cli 远程控制</el-checkbox>
-          <el-button v-if="remote.saved && remote.enable" type="text" size="mini" @click="resetRemoteToken">重置 token</el-button>
-          <div class="remote-tip">开启后，持有 token 即可在服务节点上执行任意 Erlang 代码，请只给可信的使用者。关闭后 token 立即失效。</div>
-        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button size="mini" type="primary" @click="submitForm">确 定</el-button>
         <el-button size="mini" @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog title="远程工具 token" :visible.sync="tokenDlg.open" width="560px" append-to-body>
-      <el-alert type="warning" :closable="false" show-icon title="token 只显示这一次，关闭后无法再查看，丢失后只能重置。" />
-      <el-input class="remote-token" readonly :value="tokenDlg.token">
-        <el-button slot="append" @click="copyText(tokenDlg.token)">复制</el-button>
-      </el-input>
-      <div class="remote-tip">配合 erl-cli skill 使用，连接示例：</div>
-      <el-input type="textarea" readonly :rows="3" :value="remoteCommand">
-      </el-input>
-      <div class="remote-tip">注意：erl_cli.py 目前只支持 ws://（不带 TLS）。通过 https 域名访问时，需要改用后端的 http 端口或内网地址。</div>
-      <div slot="footer" class="dialog-footer">
-        <el-button size="mini" @click="copyText(remoteCommand)">复制命令</el-button>
-        <el-button size="mini" type="primary" @click="tokenDlg.open = false">我已保存</el-button>
       </div>
     </el-dialog>
     <el-dialog title="数据变更通知"
@@ -176,7 +157,7 @@
 import InputTableSelect from "@/components/InputTableSelect";
 import { queryObject, getObject, delObject, createObject, updateObject } from "@/api/iot/table";
 import {randomString, validateCheck} from "@/assets/js/iot";
-import { syncApp, getAppRemote, setAppRemote } from "@/api/iot/system";
+import { syncApp } from "@/api/iot/system";
 
 export default {
   name: "App",
@@ -218,9 +199,6 @@ export default {
       form: { name: '', appid : '',  secret:'', expire:7200, syncStatus: 'wait' },
       projects: [],
       projectOptions: [],
-      // 远程工具：enable 是表单勾选状态，saved 是服务端当前状态
-      remote: { enable: false, saved: false },
-      tokenDlg: { open: false, token: '' },
       currentProjectId: undefined,
       // 表单校验
       rules: {
@@ -255,13 +233,6 @@ export default {
     }
     this.getProjectOptions();
     this.getList();
-  },
-  computed: {
-    remoteCommand() {
-      const port = location.port || (location.protocol === 'https:' ? '443' : '80');
-      return 'python3 scripts/erl_cli.py eval "erlang:node()" --host ' + location.hostname +
-        ' --port ' + port + ' --path /debug --token ' + this.tokenDlg.token;
-    }
   },
   methods: {
     getProjectOptions() {
@@ -376,7 +347,6 @@ export default {
         syncStatus: 'wait',
         project: this.currentProjectId
       };
-      this.remote = { enable: false, saved: false };
       this.resetForm("createForm");
     },
     /** 搜索按钮操作 */
@@ -418,12 +388,6 @@ export default {
         this.form = response.data;
         this.open = true;
         this.title = "修改" + this.desc;
-        if (this.$auth.hasPermi('system:app:remote')) {
-          getAppRemote(this.form.id).then(res => {
-            const enable = !!(res.data && res.data.enable);
-            this.remote = { enable, saved: enable };
-          });
-        }
       });
     },
     /** 提交按钮 */
@@ -435,59 +399,18 @@ export default {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
-              this.applyRemote(this.form.id);
             });
           } else {
             createObject(this.table, this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
-              if (this.remote.enable) {
-                // 新增接口不返回 id，按 appid、名称和项目查回刚创建的应用
-                queryObject(this.table, { appid: this.form.appid, pageNum: 1, pageSize: 20 }).then(res => {
-                  const app = (res.rows || []).find(r => r.name === this.form.name && r.project === this.form.project);
-                  if (app) this.applyRemote(app.id);
-                });
-              }
             });
           }
         }
       });
     },
 
-    // 勾选状态与服务端不一致时，同步远程工具开关；开启时弹出 token
-    applyRemote(id) {
-      if (!this.$auth.hasPermi('system:app:remote') || this.remote.enable === this.remote.saved) {
-        return;
-      }
-      setAppRemote({ id, enable: this.remote.enable ? '1' : '0' }).then(res => {
-        if (res.data && res.data.token) {
-          this.showToken(res.data.token);
-        } else {
-          this.$modal.msgSuccess(this.remote.enable ? "远程工具已开启" : "远程工具已关闭");
-        }
-      });
-    },
-    resetRemoteToken() {
-      this.$modal.confirm('重置后旧 token 立即失效，是否继续？').then(() => {
-        return setAppRemote({ id: this.form.id, enable: '1', reset: true });
-      }).then(res => {
-        if (res.data && res.data.token) {
-          this.open = false;
-          this.showToken(res.data.token);
-        }
-      }).catch(() => {});
-    },
-    showToken(token) {
-      this.tokenDlg = { open: true, token };
-    },
-    copyText(text) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => this.$modal.msgSuccess("已复制"));
-      } else {
-        this.$modal.msgError("当前环境不支持自动复制，请手动选中复制");
-      }
-    },
     showSyncDlg(row) {
       this.openSync = true;
       this.app = row;
@@ -518,17 +441,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.remote-tip {
-  margin-top: 6px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #909399;
-}
-
-.remote-token {
-  margin: 12px 0;
-}
-
 .sync-dialog-body {
   .sync-radio-group {
     display: flex;

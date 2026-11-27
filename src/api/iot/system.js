@@ -65,24 +65,6 @@ export function syncApp(Id, Event) {
     })
 }
 
-// 查询应用是否开启远程工具（不返回 token）
-export function getAppRemote(id) {
-    return request({
-        url: '/system/app/remote',
-        method: 'get',
-        params: { id }
-    })
-}
-
-// 开启、关闭或重置应用的远程工具，开启和重置时返回 token（仅此一次）
-export function setAppRemote(data) {
-    return request({
-        url: '/system/app/remote',
-        method: 'post',
-        data
-    })
-}
-
 export function queryDeviceLog(params) {
     return request({
         url: '/system/device/log/list',
