@@ -108,6 +108,11 @@ export default {
       ];
     this.load();
   },
+  watch: {
+    id() {
+      this.load();
+    }
+  },
   methods: {
     // 协议问号点击：打开说明弹窗
     onTipClick({ content }) {

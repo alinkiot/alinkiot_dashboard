@@ -128,6 +128,11 @@ export default {
   created() {
     this.getExtend();
   },
+  watch: {
+    id() {
+      this.getExtend();
+    }
+  },
   methods: {
     createData() {
       this.columns = [];

@@ -83,6 +83,12 @@ export default {
       this.activeName = this.$route.query.tab;
     }
   },
+  watch: {
+    // 同一路径标签页被复用（keep-alive），切换产品时 query.id 变化需同步刷新
+    '$route.query.id'(id) {
+      if (id && this.$route.name === 'ProductEdit') this.productId = id;
+    }
+  },
   methods: {
     onload(product) {
       this.loading = false;
