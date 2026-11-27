@@ -240,6 +240,7 @@ export default {
       column: [],
       product: undefined,
       project: undefined,
+      currentProjectId: undefined,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -276,11 +277,18 @@ export default {
       return types && (types.includes('wechat') || types.includes('sms'))
     }
   },
-  created() {
+  async created() {
     this.column = [
       // {label:'ID', key:'id', width:40},
       {label:'告警名称', key:'name', isSearch: true}
-    ],
+    ];
+    // 从项目进入时，默认只看当前项目的规则，新建规则也默认归属当前项目
+    const current = await this.$store.dispatch('settings/ResolveProject');
+    if(current){
+      this.currentProjectId = current.id;
+      this.queryParams.project = current.id;
+      this.form.project = current.id;
+    }
     this.getList();
   },
   methods: {
@@ -365,7 +373,7 @@ export default {
     // 表单重置
     reset() {
       this.product = undefined;
-      this.form = { notifyType : [] };
+      this.form = { notifyType : [], project: this.currentProjectId };
       this.resetForm("createForm");
     },
     /** 搜索按钮操作 */
