@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智能体 · 交互设计原型</title>
+<style>
+:root{
+  --blue:#0071e3; --blue-hover:#0077ed; --blue-soft:rgba(0,113,227,.08);
+  --green:#34c759; --orange:#ff9f0a; --red:#ff3b30;
+  --text:#1d1d1f; --text-2:#6e6e73; --text-3:#8e8e93;
+  --surface:#fff; --surface-2:#f5f5f7; --surface-3:#fbfbfd;
+  --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.14);
+  --radius:12px; --shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.03);
+  --shadow-hover:0 4px 16px rgba(0,0,0,.08);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  color:var(--text);background:var(--surface-2);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none !important}
+.icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:216px minmax(0,1fr);min-height:100vh}
+.sidebar{background:var(--surface-3);border-right:1px solid var(--border);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 20px;font-weight:600;font-size:15px}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;letter-spacing:-.5px}
+.nav-group{margin-bottom:14px}
+.nav-label{font-size:11px;color:var(--text-3);padding:0 10px 6px;letter-spacing:.04em}
+.nav-item{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:8px;color:var(--text-2);font-size:13px;user-select:none}
+.nav-item:hover{background:rgba(0,0,0,.04)}
+.nav-item.active{background:var(--blue-soft);color:var(--blue);font-weight:600}
+.nav-item.child{padding-left:34px;height:32px}
+.nav-item.child.active{background:rgba(0,113,227,.12)}
+.nav-item .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+.main{min-width:0}
+.topbar{height:52px;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:10}
+.crumb{font-size:13px;color:var(--text-3)}
+.crumb b{color:var(--text);font-weight:500}
+.top-right{display:flex;align-items:center;gap:14px;color:var(--text-2)}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0071e3,#64b5ff);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600}
+.content{padding:24px 32px 56px;max-width:1320px;margin:0 auto}
+.proto-note{display:flex;align-items:center;gap:8px;background:#e8f2ff;border:1px solid #cfe3ff;color:#0b5fb8;border-radius:10px;padding:9px 14px;font-size:12px;margin-bottom:20px}
+.proto-note .icon{width:14px;height:14px}
+
+/* ---------- page head & tabs ---------- */
+.page-head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.page-head h1{font-size:28px;line-height:1.15;letter-spacing:-.02em;margin:0 0 6px}
+.page-head p{margin:0;color:var(--text-2);font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:980px;padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap;margin-top:6px}
+.badge.mid{background:rgba(255,159,10,.14);color:#a65d00}
+.badge.high{background:rgba(255,59,48,.12);color:#c02d26}
+.badge.crit{background:#ff3b30;color:#fff}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:8px;height:38px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:980px;color:var(--text-2);font-size:13px;transition:.15s}
+.tab:hover{border-color:var(--border-strong);box-shadow:var(--shadow)}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.tab .icon{width:15px;height:15px}
+
+/* ---------- workbench ---------- */
+.workbench{display:grid;grid-template-columns:minmax(0,1fr) 284px;gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-bd{padding:24px}
+.card-hd{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-hd h2{font-size:15px;margin:0;font-weight:600}
+.card-hd small{color:var(--text-3);font-size:12px}
+.stepper{list-style:none;display:flex;align-items:center;margin:0;padding:18px 24px;border-bottom:1px solid var(--border);gap:4px;overflow:auto}
+.stepper li{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:12px;white-space:nowrap;flex:1}
+.stepper li:after{content:"";height:1px;background:var(--border-strong);flex:1;margin:0 10px;min-width:12px}
+.stepper li:last-child:after{display:none}
+.stepper .num{width:22px;height:22px;border-radius:50%;border:1px solid var(--border-strong);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.stepper li.active{color:var(--blue);font-weight:600}
+.stepper li.active .num{background:var(--blue);border-color:var(--blue);color:#fff}
+.stepper li.done{color:var(--text-2)}
+.stepper li.done .num{background:rgba(52,199,89,.14);border-color:transparent;color:#248a3d}
+.step-panel{padding:24px}
+.section-title{font-size:14px;font-weight:600;margin:0 0 4px}
+.section-desc{font-size:12px;color:var(--text-2);margin:0 0 20px}
+.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field.full{grid-column:1/-1}
+.field label{font-size:12px;font-weight:600;color:var(--text-2)}
+.field .hint{font-size:11px;color:var(--text-3);font-weight:400}
+select,input[type=text],input[type=number],textarea{
+  width:100%;height:36px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface);padding:0 12px;outline:none;transition:.15s;font-size:13px;
+}
+textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px}
+select:focus,input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,113,227,.16)}
+select:disabled{background:var(--surface-2);color:var(--text-2);cursor:not-allowed}
+.radio-row,.toggle-row{display:flex;gap:10px;flex-wrap:wrap}
+.radio-card{flex:1;min-width:200px;border:1px solid var(--border-strong);border-radius:10px;padding:14px;cursor:pointer;transition:.15s}
+.radio-card:hover{border-color:var(--blue)}
+.radio-card.selected{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 1px var(--blue) inset}
+.radio-card b{display:block;font-size:13px;margin-bottom:4px}
+.radio-card span{font-size:11px;color:var(--text-2)}
+.toggle{display:flex;align-items:center;gap:10px;font-size:13px;margin-top:16px}
+.switch{width:38px;height:22px;border-radius:980px;background:#c7c7cc;border:0;position:relative;transition:.2s;flex:none}
+.switch:after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+.switch.on{background:var(--green)}
+.switch.on:after{left:18px}
+.summary{margin-top:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text-2)}
+.summary b{color:var(--text);font-weight:600}
+.summary .sep{color:#c7c7cc}
+.lock-note{display:inline-flex;align-items:center;gap:5px;color:#a65d00;background:rgba(255,159,10,.12);border-radius:6px;padding:4px 8px;font-size:11px}
+.empty-note{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:10px;padding:14px;font-size:12px;color:var(--text-2)}
+.link{color:var(--blue);background:none;border:0;padding:0;font-size:12px;font-weight:600}
+.link:hover{text-decoration:underline}
+
+/* ---------- actions ---------- */
+.wizard-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-top:1px solid var(--border);background:#fcfcfd;border-radius:0 0 var(--radius) var(--radius)}
+.wizard-foot .foot-info{font-size:11px;color:var(--text-3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);font-size:13px;font-weight:500;transition:.15s}
+.btn:hover{box-shadow:var(--shadow);border-color:var(--border-strong)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:var(--blue-hover)}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--blue);padding:0 8px}
+.btn.sm{height:30px;padding:0 12px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn .icon{width:14px;height:14px}
+
+/* ---------- credential & prompt ---------- */
+.download-card{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+.download-card .file{display:flex;align-items:center;gap:12px}
+.file-badge{width:36px;height:36px;border-radius:9px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:10px;font-weight:700;font-family:var(--mono)}
+.download-card b{display:block;font-size:13px}
+.download-card span{font-size:11px;color:var(--text-3)}
+.credential{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.cred-hd{display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);padding:9px 14px;font-size:12px;font-weight:600;border-bottom:1px solid var(--border)}
+.cred-hd .flag{font-weight:500;color:#a65d00;font-size:11px}
+.cred-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.cred-row:last-child{border-bottom:0}
+.cred-row .k{font-size:12px;color:var(--text-2);width:64px;flex:none}
+.cred-row .v{font-family:var(--mono);font-size:12px;flex:1;word-break:break-all}
+.cred-row .ops{display:flex;gap:4px;flex:none}
+.icon-btn{width:28px;height:28px;border:0;background:transparent;border-radius:6px;display:grid;place-items:center;color:var(--text-2)}
+.icon-btn:hover{background:var(--surface-2);color:var(--blue)}
+.prompt-wrap{border-radius:10px;overflow:hidden;border:1px solid #2c2c2e}
+.prompt-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#2c2c2e;color:#e8e8ed;padding:9px 12px;font-size:11px;flex-wrap:wrap}
+.prompt-hd .warn{color:#ffb340}
+.prompt-hd .chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.09);border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:10px}
+pre.prompt{margin:0;background:#1d1d1f;color:#e8e8ed;padding:16px;font-family:var(--mono);font-size:11.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:250px;overflow:auto}
+
+/* ---------- checklist & status ---------- */
+.checklist{display:flex;flex-direction:column;gap:10px;margin:4px 0 16px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer}
+.check-item:hover{border-color:var(--border-strong)}
+.check-item input{margin:3px 0 0;accent-color:var(--blue)}
+.check-item small{display:block;color:var(--text-3);font-size:11px;margin-top:2px}
+.progress-line{font-size:11px;color:var(--text-3);margin-bottom:12px}
+.status-hero{display:flex;align-items:center;gap:14px;padding:18px;border:1px solid var(--border);border-radius:10px;margin-bottom:16px;background:var(--surface-2)}
+.status-dot{width:12px;height:12px;border-radius:50%;background:#c7c7cc;box-shadow:0 0 0 5px rgba(199,199,204,.2)}
+.status-dot.on{background:var(--green);box-shadow:0 0 0 5px rgba(52,199,89,.16);animation:pulse 2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(52,199,89,0)}}
+.status-hero b{font-size:15px;display:block}
+.status-hero small{color:var(--text-2);font-size:12px;display:block;margin-top:3px}
+.countdown{margin-left:auto;text-align:right}
+.countdown b{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em}
+.progress-track{height:5px;background:rgba(0,0,0,.07);border-radius:980px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:var(--green);width:100%;transition:width 1s linear}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+th{color:var(--text-3);font-weight:500;background:var(--surface-2)}
+
+/* ---------- aside ---------- */
+.aside{position:sticky;top:76px;display:flex;flex-direction:column;gap:14px}
+.aside .card-bd{padding:18px}
+.aside h3{font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:7px}
+.aside h3 .icon{color:var(--orange)}
+.aside ul{margin:0;padding-left:17px;color:var(--text-2);font-size:12px;line-height:1.8}
+.aside li{margin-bottom:6px}
+.aside .notice{background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text-2);margin-top:12px;line-height:1.7}
+.aside .notice.crit{background:rgba(255,59,48,.08);color:#a82c25}
+.aside .link-list{display:flex;flex-direction:column;gap:9px}
+.aside .link-list button{text-align:left;border:0;background:transparent;padding:0;color:var(--blue);font-size:12px}
+
+/* ---------- toast & modal ---------- */
+.toast-stack{position:fixed;top:68px;right:24px;z-index:99;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1d1d1f;color:#fff;border-radius:10px;padding:11px 15px;font-size:12px;box-shadow:0 8px 32px rgba(0,0,0,.24);display:flex;align-items:center;gap:8px;max-width:360px;animation:slidein .2s ease}
+.toast:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);flex:none}
+.toast.err:before{background:var(--red)}
+@keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.32);display:grid;place-items:center;z-index:100;padding:20px}
+.dialog{background:var(--surface);border-radius:14px;width:min(440px,100%);padding:24px;box-shadow:0 12px 48px rgba(0,0,0,.24)}
+.dialog h3{margin:0 0 10px;font-size:17px}
+.dialog p{margin:0 0 20px;color:var(--text-2);font-size:13px;line-height:1.7}
+.dialog .btn-row{justify-content:flex-end}
+
+@media(max-width:1100px){
+  .workbench{grid-template-columns:1fr}
+  .aside{position:static;flex-direction:row}
+  .aside>*{flex:1}
+}
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .content{padding:18px 16px 40px}
+  .topbar{padding:0 16px}
+  .field-grid{grid-template-columns:1fr}
+  .aside{flex-direction:column}
+  .stepper li span:not(.num){display:none}
+}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-agent" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M9 16h6"/></symbol>
+  <symbol id="i-build" viewBox="0 0 24 24"><path d="M4 20h16M7 20V9l5-4 5 4v11M10 20v-5h4v5"/></symbol>
+  <symbol id="i-control" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5L15 12l-3-3 2.5-2.5Z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-setting" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-4l-.3 2.9a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.9h4l.3-2.9a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5c.1-.3.1-.7.1-1Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-1 5M20 5v6h-6"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><rect x="9" y="9" width="6" height="6" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v6c0 4.4 2.9 7.9 7 9 4.1-1.1 7-4.6 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-.9.7-1.5 1.2-1.5 2.5M12 17h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">AL</span><span>ALinkIOT</span></div>
+    <div class="nav-group">
+      <div class="nav-label">工作台</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-grid"/></svg>仪表盘</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">智能体</div>
+      <div class="nav-item active"><svg class="icon"><use href="#i-agent"/></svg>智能体应用</div>
+      <div class="nav-item child" data-nav="app"><span class="dot"></span>应用生成</div>
+      <div class="nav-item child" data-nav="control"><span class="dot"></span>设备控制</div>
+      <div class="nav-item child" data-nav="remote"><span class="dot"></span>远程运维</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">业务</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-folder"/></svg>工程项目</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-setting"/></svg>系统管理</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">智能体应用 / <b id="crumb-current">应用生成</b></div>
+      <div class="top-right"><svg class="icon"><use href="#i-help"/></svg><span>帮助</span><span class="avatar">管</span></div>
+    </header>
+
+    <main class="content">
+      <div class="proto-note"><svg class="icon"><use href="#i-info"/></svg>交互设计原型 · 仅用于评审，数据为演示用，不会真的下载文件或连接后端</div>
+
+      <div class="page-head">
+        <div>
+          <h1 id="page-title">应用生成</h1>
+          <p id="page-subtitle">按平台设备数据，让智能体生成一个独立的 Python + MySQL 物联网应用</p>
+        </div>
+        <span class="badge mid" id="page-badge"><svg class="icon"><use href="#i-shield"/></svg>中风险 · 含应用密钥</span>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-target="app"><svg class="icon"><use href="#i-build"/></svg>应用生成</button>
+        <button class="tab" data-target="control"><svg class="icon"><use href="#i-control"/></svg>设备控制</button>
+        <button class="tab" data-target="remote"><svg class="icon"><use href="#i-wrench"/></svg>远程运维</button>
+      </div>
+
+      <!-- ============ 应用生成 ============ -->
+      <section class="page" id="page-app">
+        <div class="workbench">
+          <div class="card">
+            <ol class="stepper" data-stepper="app">
+              <li class="active"><span class="num">1</span><span>选择上下文</span></li>
+              <li><span class="num">2</span><span>填写需求</span></li>
+              <li><span class="num">3</span><span>获取接入包</span></li>
+              <li><span class="num">4</span><span>验证与收尾</span></li>
+            </ol>
+
+            <div class="step-panel" data-step="1" data-page="app">
+              <h3 class="section-title">这次接入使用哪个应用？</h3>
+              <p class="section-desc">提示词会带上所选应用的 AppID 和 Secret，请先确认项目与应用无误。</p>
+              <div class="field-grid">
+                <div class="field">
+                  <label>所属项目 <span class="lock-note hidden" id="app-lock"><svg class="icon" style="width:11px;height:11px"><use href="#i-lock"/></svg>由当前项目上下文决定</span></label>
+                  <select id="app-project"><option value="">请选择项目</option></select>
+                </div>
+                <div class="field">
+                  <label>数据来源应用</label>
+                  <select id="app-app"><option value="">请选择应用</option></select>
+                  <span class="hint" id="app-empty" style="display:none">该项目暂无应用。<button class="link" type="button" data-demo="去「应用接入」创建">去「应用接入」创建 →</button></span>
+                </div>
+              </div>
+              <div class="summary" id="app-summary"><span>当前接入</span><span class="sep">·</span><span>项目：<b>未选择</b></span><span class="sep">·</span><span>应用：<b>未选择</b></span></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="2" data-page="app">
+              <h3 class="section-title">先告诉智能体你要什么</h3>
+              <p class="section-desc">这些信息会写进提示词，避免你对着空白文本框现编需求。</p>
+              <div class="field-grid">
+                <div class="field"><label>应用名称</label><input type="text" id="app-name" value="滨江设备同步应用"></div>
+                <div class="field"><label>场景模板</label><select id="app-scene"><option>设备数据同步</option><option>告警分析</option><option>数据看板</option></select></div>
+                <div class="field"><label>设备规模</label><select id="app-scale"><option>1–50 台</option><option>51–500 台</option><option>500 台以上</option></select></div>
+                <div class="field"><label>数据库位置</label><select id="app-db"><option>平台内置 MySQL</option><option>自建 MySQL</option><option>待定，让智能体建议</option></select></div>
+                <div class="field full"><label>补充说明 <span class="hint">选填</span></label><textarea id="app-note" placeholder="例如：每 5 分钟同步一次设备数据，保留最近 30 天"></textarea></div>
+              </div>
+            </div>
+
+            <div class="step-panel hidden" data-step="3" data-page="app">
+              <h3 class="section-title">下载 SKILL，然后复制提示词</h3>
+              <p class="section-desc">先把 SKILL 放进智能体的 skills 目录，再粘贴提示词。</p>
+              <div class="download-card">
+                <div class="file"><span class="file-badge">ZIP</span><div><b>alinkiot-app.zip</b><span>生成应用的 SKILL 包 · 依赖 uzyiot-api</span></div></div>
+                <button class="btn sm" data-download="alinkiot-app.zip"><svg class="icon"><use href="#i-download"/></svg>下载 SKILL</button>
+              </div>
+              <div class="credential">
+                <div class="cred-hd"><span>接入凭证</span><span class="flag">默认遮蔽 · 复制时复制完整值</span></div>
+                <div class="cred-row"><span class="k">AppID</span><span class="v" id="app-appid">—</span><button class="icon-btn" data-copy-field="app-appid" title="复制 AppID"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+                <div class="cred-row"><span class="k">Secret</span><span class="v" id="app-secret">—</span><button class="icon-btn" data-reveal="app" title="显示/隐藏"><svg class="icon"><use href="#i-eye"/></svg></button><button class="icon-btn" data-copy-field="app-secret-real" title="复制 Secret"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+              </div>
+              <div class="prompt-wrap">
+                <div class="prompt-hd"><span class="warn">预览已遮蔽 · 复制时自动填入完整凭证</span><span class="chips"><span class="chip">项目</span><span class="chip">appId</span><span class="chip">Secret</span><span class="chip">host</span></span></div>
+                <pre class="prompt" id="app-prompt"></pre>
+              </div>
+              <div class="btn-row"><button class="btn primary sm" data-copy-prompt="app"><svg class="icon"><use href="#i-copy"/></svg>复制完整提示词</button><button class="btn sm" data-download="uzyiot-api.zip">同时下载依赖 SKILL</button></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="4" data-page="app">
+              <h3 class="section-title">接入清单</h3>
+              <p class="section-desc">三项都完成后，智能体就会按你的需求开始询问细节。</p>
+              <div class="progress-line" data-progress>已完成 0 / 3</div>
+              <div class="checklist">
+                <label class="check-item"><input type="checkbox"><span>已下载并解压 <b>alinkiot-app.zip</b><small>把 alinkiot-app 目录放进智能体的 skills 目录</small></span></label>
+                <label class="check-item"><input type="checkbox"><span>已复制提示词发给智能体<small>提示词含密钥，不要粘贴到公开群聊</small></span></label>
+                <label class="check-item"><input type="checkbox"><span>智能体已回复确认需求<small>它会先确认产品、设备类型和规模</small></span></label>
+              </div>
+              <div class="empty-note"><span>密钥泄露了？到「工程项目 / 应用接入」更换 Secret，旧提示词立即失效。</span><button class="link" data-demo="跳转到应用接入">去更换 →</button></div>
+            </div>
+
+            <div class="wizard-foot"><span class="foot-info" id="app-foot-info">第 1 步 / 共 4 步 · 请先确认项目与应用</span><div><button class="btn" data-prev="app" disabled>上一步</button> <button class="btn primary" data-next="app">下一步</button></div></div>
+          </div>
+
+          <aside class="aside">
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-shield"/></svg>安全须知</h3>
+              <ul>
+                <li>提示词包含 AppID 与 Secret，持有者可以此应用身份查询数据、下发控制</li>
+                <li>只发给可信的智能体，不要粘贴到公开群聊或截图</li>
+                <li>用完或怀疑泄露，到「应用接入」更换 Secret</li>
+              </ul>
+              <div class="notice">Secret 默认遮蔽。点「显示」仅在本页展开；点「复制」复制的是完整值。</div>
+            </div></div>
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-help"/></svg>这个 SKILL 会做什么</h3>
+              <ul>
+                <li>按平台接口读取项目下的产品、设备与数据</li>
+                <li>生成一个独立的 Python + MySQL 应用</li>
+                <li>不会修改平台侧配置</li>
+              </ul>
+              <div class="link-list"><button class="link" data-demo="打开使用文档">查看接入文档 →</button><button class="link" data-demo="打开应用接入">管理应用与密钥 →</button></div>
+            </div></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ 设备控制 ============ -->
+      <section class="page hidden" id="page-control">
+        <div class="workbench">
+          <div class="card">
+            <ol class="stepper" data-stepper="control">
+              <li class="active"><span class="num">1</span><span>选择上下文</span></li>
+              <li><span class="num">2</span><span>配置权限</span></li>
+              <li><span class="num">3</span><span>获取接入包</span></li>
+              <li><span class="num">4</span><span>验证与收尾</span></li>
+            </ol>
+
+            <div class="step-panel" data-step="1" data-page="control">
+              <h3 class="section-title">以哪个应用的身份操作？</h3>
+              <p class="section-desc">智能体将以所选应用的权限访问平台，请先确认项目与应用。</p>
+              <div class="field-grid">
+                <div class="field"><label>所属项目</label><select id="ctrl-project"><option value="">请选择项目</option></select></div>
+                <div class="field"><label>应用</label><select id="ctrl-app"><option value="">请选择应用</option></select><span class="hint" id="ctrl-empty" style="display:none">该项目暂无应用。<button class="link" type="button" data-demo="去「应用接入」创建">去「应用接入」创建 →</button></span></div>
+              </div>
+              <div class="summary" id="ctrl-summary"><span>当前接入</span><span class="sep">·</span><span>项目：<b>未选择</b></span><span class="sep">·</span><span>应用：<b>未选择</b></span></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="2" data-page="control">
+              <h3 class="section-title">给智能体多大权限？</h3>
+              <p class="section-desc">权限范围会写进提示词：选择只读时，提示词里不会出现控制指令。</p>
+              <div class="radio-row">
+                <div class="radio-card selected" data-scope="read"><b>只读查询</b><span>查询项目、场景、设备与历史数据；不能下发控制</span></div>
+                <div class="radio-card" data-scope="write"><b>查询 + 设备控制</b><span>可下发设备控制指令，误操作会影响现场设备</span></div>
+              </div>
+              <div class="toggle"><button class="switch on" id="ctrl-confirm" aria-label="控制指令需确认"></button><span>控制指令需我逐条确认 <span class="hint">（建议保持开启）</span></span></div>
+              <div class="summary"><span>数据范围</span><span class="sep">·</span><span>项目：<b id="ctrl-range-project">未选择</b></span><span class="sep">·</span><span>权限：<b id="ctrl-range-scope">只读查询</b></span></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="3" data-page="control">
+              <h3 class="section-title">下载 SKILL，然后复制提示词</h3>
+              <p class="section-desc">SKILL 里的 env.ini 会用到下面的接入凭证。</p>
+              <div class="download-card">
+                <div class="file"><span class="file-badge">ZIP</span><div><b>uzyiot-api.zip</b><span>平台接口 SKILL · 支持查询与控制</span></div></div>
+                <button class="btn sm" data-download="uzyiot-api.zip"><svg class="icon"><use href="#i-download"/></svg>下载 SKILL</button>
+              </div>
+              <div class="credential">
+                <div class="cred-hd"><span>接入凭证</span><span class="flag">默认遮蔽 · 复制时复制完整值</span></div>
+                <div class="cred-row"><span class="k">host</span><span class="v">iot.uzycloud.com</span><button class="icon-btn" data-copy-literal="iot.uzycloud.com" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+                <div class="cred-row"><span class="k">AppID</span><span class="v" id="ctrl-appid">—</span><button class="icon-btn" data-copy-field="ctrl-appid" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+                <div class="cred-row"><span class="k">Secret</span><span class="v" id="ctrl-secret">—</span><button class="icon-btn" data-reveal="ctrl" title="显示/隐藏"><svg class="icon"><use href="#i-eye"/></svg></button><button class="icon-btn" data-copy-field="ctrl-secret-real" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+              </div>
+              <div class="prompt-wrap">
+                <div class="prompt-hd"><span class="warn">预览已遮蔽 · 复制时自动填入完整凭证</span><span class="chips"><span class="chip">权限范围</span><span class="chip">appId</span><span class="chip">Secret</span></span></div>
+                <pre class="prompt" id="ctrl-prompt"></pre>
+              </div>
+              <div class="btn-row"><button class="btn primary sm" data-copy-prompt="ctrl"><svg class="icon"><use href="#i-copy"/></svg>复制完整提示词</button></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="4" data-page="control">
+              <h3 class="section-title">确认智能体真的连上了</h3>
+              <p class="section-desc">先做一次只读试连，再决定是否下发控制指令。</p>
+              <div class="progress-line" data-progress>已完成 0 / 3</div>
+              <div class="checklist">
+                <label class="check-item"><input type="checkbox"><span>已安装 SKILL 并写入 env.ini<small>host / appId / Secret 三项都要填对</small></span></label>
+                <label class="check-item"><input type="checkbox"><span>已复制提示词，智能体确认了项目与设备范围<small>应能列出当前项目下的设备</small></span></label>
+                <label class="check-item"><input type="checkbox"><span>试连成功<small>先只读查询，确认返回的是预期设备</small></span></label>
+              </div>
+              <div class="btn-row"><button class="btn sm" id="ctrl-test"><svg class="icon"><use href="#i-play"/></svg>模拟试连（只读）</button><span class="hint" id="ctrl-test-result"></span></div>
+              <div class="empty-note" style="margin-top:16px"><span>控制指令误操作怎么办？到「应用接入」更换 Secret 可立即阻断该应用的访问。</span><button class="link" data-demo="跳转到应用接入">去更换 →</button></div>
+            </div>
+
+            <div class="wizard-foot"><span class="foot-info" id="ctrl-foot-info">第 1 步 / 共 4 步 · 请先确认项目与应用</span><div><button class="btn" data-prev="ctrl" disabled>上一步</button> <button class="btn primary" data-next="ctrl">下一步</button></div></div>
+          </div>
+
+          <aside class="aside">
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-shield"/></svg>高风险操作</h3>
+              <ul>
+                <li>选择「查询 + 设备控制」后，智能体可以下发控制指令</li>
+                <li>建议开启「控制指令需我逐条确认」</li>
+                <li>权限范围由应用的 Secret 决定，换 Secret 可立即阻断</li>
+              </ul>
+              <div class="notice crit">现场设备可能因错误指令停机。控制类指令请逐条核对设备与参数。</div>
+            </div></div>
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-help"/></svg>常见问题</h3>
+              <ul>
+                <li>只读模式下智能体不会调用控制接口</li>
+                <li>应用权限不足时，先到「应用接入」调整授权范围</li>
+                <li>试连只做查询，不改变设备状态</li>
+              </ul>
+            </div></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ 远程运维 ============ -->
+      <section class="page hidden" id="page-remote">
+        <div class="workbench">
+          <div class="card">
+            <ol class="stepper" data-stepper="remote">
+              <li class="active"><span class="num">1</span><span>启动通道</span></li>
+              <li><span class="num">2</span><span>获取连接信息</span></li>
+              <li><span class="num">3</span><span>交给智能体</span></li>
+              <li><span class="num">4</span><span>用完停止</span></li>
+            </ol>
+
+            <div class="step-panel" data-step="1" data-page="remote">
+              <h3 class="section-title">这是一个临时调试通道</h3>
+              <p class="section-desc">启动后，持有令牌的人可以在后端节点执行任意代码。只在排查问题时开启，用完立即停止。</p>
+              <div class="field-grid">
+                <div class="field"><label>有效期</label><select id="remote-hours"><option value="1">1 小时</option><option value="8">8 小时</option><option value="24" selected>24 小时</option><option value="72">72 小时</option><option value="168">168 小时</option></select><span class="hint">到期自动失效；节点重启后令牌也会失效</span></div>
+                <div class="field"><label>通道状态</label><div class="summary" style="margin:0"><span class="status-dot" id="remote-dot-small"></span><b id="remote-state-small">未启动</b></div></div>
+              </div>
+              <label class="check-item" style="margin-top:18px"><input type="checkbox" id="remote-ack"><span>我确认仅在排查问题时开启，排查完会立即停止</span></label>
+              <div class="btn-row"><button class="btn primary" id="remote-start"><svg class="icon"><use href="#i-play"/></svg>启动通道</button></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="2" data-page="remote">
+              <h3 class="section-title">连接信息与令牌</h3>
+              <p class="section-desc">令牌默认遮蔽；复制时复制完整值，请勿粘贴到公开渠道。</p>
+              <div class="status-hero">
+                <span class="status-dot on" id="remote-dot"></span>
+                <div><b>通道已启动</b><small id="remote-expire">到期时间：—</small></div>
+                <div class="countdown"><b id="remote-countdown">--:--:--</b><small>剩余时间</small><div class="progress-track"><div class="progress-fill" id="remote-progress"></div></div></div>
+              </div>
+              <div class="credential">
+                <div class="cred-hd"><span>连接参数</span><span class="flag">高危凭证 · 用完即停</span></div>
+                <div class="cred-row"><span class="k">host</span><span class="v">iot.uzycloud.com</span><button class="icon-btn" data-copy-literal="iot.uzycloud.com" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+                <div class="cred-row"><span class="k">port</span><span class="v">443</span><button class="icon-btn" data-copy-literal="443" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+                <div class="cred-row"><span class="k">token</span><span class="v" id="remote-token">—</span><button class="icon-btn" data-reveal="remote" title="显示/隐藏"><svg class="icon"><use href="#i-eye"/></svg></button><button class="icon-btn" data-copy-field="remote-token-real" title="复制"><svg class="icon"><use href="#i-copy"/></svg></button></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn sm" data-regen><svg class="icon"><use href="#i-refresh"/></svg>重新生成令牌</button>
+                <button class="btn danger sm" data-stop><svg class="icon"><use href="#i-stop"/></svg>立即停止</button>
+              </div>
+              <div class="prompt-wrap" style="margin-top:16px">
+                <div class="prompt-hd"><span class="warn">预览已遮蔽 · 复制时自动填入完整令牌</span><span class="chips"><span class="chip">host</span><span class="chip">port</span><span class="chip">token</span></span></div>
+                <pre class="prompt" id="remote-prompt"></pre>
+              </div>
+              <div class="btn-row"><button class="btn primary sm" data-copy-prompt="remote"><svg class="icon"><use href="#i-copy"/></svg>复制到智能体</button><button class="btn sm" data-download="erl-cli.zip"><svg class="icon"><use href="#i-download"/></svg>下载 erl-cli SKILL</button></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="3" data-page="remote">
+              <h3 class="section-title">交给智能体</h3>
+              <p class="section-desc">建议先让智能体做一次节点概览，确认连的是预期节点。</p>
+              <div class="progress-line" data-progress>已完成 0 / 2</div>
+              <div class="checklist">
+                <label class="check-item"><input type="checkbox"><span>已安装 erl-cli SKILL<small>解压后把 erl-cli 目录放进 skills 目录</small></span></label>
+                <label class="check-item"><input type="checkbox"><span>智能体已返回节点概览<small>确认节点名与集群状态符合预期</small></span></label>
+              </div>
+              <div class="empty-note"><span>排查结束后，务必回到这里停止通道；不要依赖到期自动失效。</span><button class="btn danger sm" data-stop>立即停止</button></div>
+            </div>
+
+            <div class="step-panel hidden" data-step="4" data-page="remote">
+              <h3 class="section-title">最近连接记录</h3>
+              <p class="section-desc">停止后令牌立即失效；已建立的连接最长 5 分钟内断开。</p>
+              <table>
+                <thead><tr><th>时间</th><th>来源</th><th>命令数</th><th>结果</th></tr></thead>
+                <tbody id="remote-logs"><tr><td colspan="4" style="color:var(--text-3);text-align:center;padding:28px">暂无连接记录</td></tr></tbody>
+              </table>
+              <div class="btn-row" style="margin-top:18px"><button class="btn danger" data-stop><svg class="icon"><use href="#i-stop"/></svg>停止通道</button></div>
+            </div>
+
+            <div class="wizard-foot"><span class="foot-info" id="remote-foot-info">第 1 步 / 共 4 步 · 通道未启动</span><div><button class="btn" data-prev="remote" disabled>上一步</button> <button class="btn primary" data-next="remote">下一步</button></div></div>
+          </div>
+
+          <aside class="aside">
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-shield"/></svg>极高风险</h3>
+              <ul>
+                <li>此通道等同在后端节点执行任意代码</li>
+                <li>只在排查时开启，用完立即停止</li>
+                <li>令牌只存内存，节点重启后失效</li>
+                <li>重新生成会让旧令牌马上失效</li>
+              </ul>
+              <div class="notice crit">不要把令牌或含令牌的提示词粘贴到公开群聊、工单或截图里。</div>
+            </div></div>
+            <div class="card"><div class="card-bd">
+              <h3><svg class="icon"><use href="#i-help"/></svg>排查建议</h3>
+              <ul>
+                <li>先让智能体执行节点概览，确认目标正确</li>
+                <li>排查过程中保留命令记录，便于复盘</li>
+                <li>连接不上时优先检查令牌是否已轮换或到期</li>
+              </ul>
+            </div></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<span id="app-secret-real" class="hidden"></span>
+<span id="ctrl-secret-real" class="hidden"></span>
+<span id="remote-token-real" class="hidden"></span>
+
+<div class="toast-stack" id="toasts"></div>
+<div class="overlay hidden" id="overlay">
+  <div class="dialog" role="dialog" aria-modal="true">
+    <h3 id="dialog-title">确认操作</h3>
+    <p id="dialog-msg"></p>
+    <div class="btn-row"><button class="btn" id="dialog-cancel">取消</button><button class="btn danger" id="dialog-ok">确认</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = (s,r)=> (r||document).querySelector(s);
+  const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+  const DEMO_SECRET = 'demo-secret-9f3c8a71';
+  const DEMO_TOKEN = 'tk_live_7b21e4d9';
+  const projects = {
+    '滨江桥梁监测': ['bj-collector','bj-report'],
+    '矿山巡检': ['mine-edge','mine-alarm'],
+    '城市内涝监测': ['rain-monitor']
+  };
+  const state = {
+    app:{step:1,project:'',app:'',reveal:false},
+    ctrl:{step:1,project:'',app:'',reveal:false,scope:'read',confirm:true},
+    remote:{step:1,hours:24,enabled:false,reveal:false,token:'',expireAt:0,totalMs:0}
+  };
+  const labels = {
+    app:{title:'应用生成',subtitle:'按平台设备数据，让智能体生成一个独立的 Python + MySQL 物联网应用',badge:'mid',badgeText:'中风险 · 含应用密钥'},
+    ctrl:{title:'设备控制',subtitle:'让智能体以应用身份查询或控制设备',badge:'high',badgeText:'高风险 · 可下发控制指令'},
+    remote:{title:'远程运维',subtitle:'临时开放后端节点调试通道，排查完立即关闭',badge:'crit',badgeText:'极高风险 · 任意代码执行'}
+  };
+  const footInfo = {
+    app:['请先确认项目与应用','补充要生成的应用需求','下载 SKILL 后复制提示词','三项完成即可交给智能体'],
+    ctrl:['请先确认项目与应用','选择只读或可控制范围','下载 SKILL 后复制提示词','建议先做只读试连'],
+    remote:['通道未启动，确认后点启动','令牌默认遮蔽，复制的是完整值','先让智能体确认节点概览','排查完请立即停止通道']
+  };
+
+  /* ---------- utils ---------- */
+  function toast(msg,type){
+    const el=document.createElement('div');
+    el.className='toast'+(type==='err'?' err':'');
+    el.textContent=msg;
+    $('#toasts').appendChild(el);
+    setTimeout(()=>{el.style.opacity='0';el.style.transition='.3s';setTimeout(()=>el.remove(),300)},2800);
+  }
+  function mask(s){ if(!s) return '—'; return s.slice(0,4)+'••••••••'+s.slice(-4); }
+  async function copyText(text){
+    try{
+      if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); return true; }
+    }catch(e){}
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      const ok=document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    }catch(e){ return false; }
+  }
+  function confirmDialog(title,msg,onOk){
+    $('#dialog-title').textContent=title; $('#dialog-msg').textContent=msg;
+    $('#overlay').classList.remove('hidden');
+    const ok=$('#dialog-ok'), cancel=$('#dialog-cancel');
+    const close=()=>{ $('#overlay').classList.add('hidden'); ok.onclick=null; cancel.onclick=null; };
+    ok.onclick=()=>{ close(); onOk(); }; cancel.onclick=close;
+    $('#overlay').onclick=e=>{ if(e.target===$('#overlay')) close(); };
+  }
+
+  /* ---------- navigation ---------- */
+  function switchPage(page){
+    $$('.page').forEach(p=>p.classList.add('hidden'));
+    $('#page-'+page).classList.remove('hidden');
+    $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.target===page));
+    $$('.nav-item.child').forEach(n=>n.classList.toggle('active',n.dataset.nav===page));
+    const meta=labels[page];
+    $('#crumb-current').textContent=meta.title;
+    $('#page-title').textContent=meta.title;
+    $('#page-subtitle').textContent=meta.subtitle;
+    const badge=$('#page-badge'); badge.className='badge '+meta.badge;
+    badge.innerHTML='<svg class="icon"><use href="#i-shield"/></svg>'+meta.badgeText;
+    if(page==='remote') renderRemote();
+  }
+  $$('.tab').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.target)));
+  $$('.nav-item.child').forEach(b=>b.addEventListener('click',()=>switchPage(b.dataset.nav)));
+
+  /* ---------- stepper ---------- */
+  function go(page,step){
+    const s=state[page];
+    if(step>s.step && step>=2 && page!=='remote' && (!s.project||!s.app)){
+      toast('请先选择项目和对应应用','err'); return;
+    }
+    if(step>s.step && page==='remote' && step>=2 && !s.enabled){
+      toast('请先启动通道并确认风险提示','err'); return;
+    }
+    s.step=Math.max(1,Math.min(4,step));
+    $$('[data-stepper="'+page+'"] li').forEach((li,i)=>{
+      li.classList.toggle('active',i+1===s.step);
+      li.classList.toggle('done',i+1<s.step);
+    });
+    $$('.step-panel[data-page="'+page+'"]').forEach(p=>p.classList.toggle('hidden',Number(p.dataset.step)!==s.step));
+    const prev=$('[data-prev="'+page+'"]'), next=$('[data-next="'+page+'"]');
+    prev.disabled=s.step===1;
+    next.textContent=s.step===4?'完成':'下一步';
+    $('#'+page+'-foot-info').textContent='第 '+s.step+' 步 / 共 4 步 · '+footInfo[page][s.step-1];
+    if(page==='app'||page==='ctrl') renderPrompt(page);
+    if(page==='remote') renderRemote();
+  }
+  $$('[data-next]').forEach(b=>b.addEventListener('click',()=>{
+    const p=b.dataset.next;
+    if(state[p].step===4){ toast('原型演示：此步在真实系统中用于提交或记录接入状态'); return; }
+    go(p,state[p].step+1);
+  }));
+  $$('[data-prev]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.prev,state[b.dataset.prev].step-1)));
+
+  /* ---------- context selects ---------- */
+  function fillProjects(page){
+    const sel=$('#'+page+'-project');
+    Object.keys(projects).forEach(p=>{ const o=document.createElement('option'); o.value=p;o.textContent=p;sel.appendChild(o); });
+    sel.addEventListener('change',()=>{
+      state[page].project=sel.value; state[page].app='';
+      fillApps(page); updateSummary(page); renderPrompt(page);
+    });
+  }
+  function fillApps(page){
+    const sel=$('#'+page+'-app');
+    sel.innerHTML='<option value="">请选择应用</option>';
+    const list=projects[state[page].project]||[];
+    list.forEach(a=>{ const o=document.createElement('option');o.value=a;o.textContent=a+' · '+mask(DEMO_SECRET);sel.appendChild(o); });
+    $('#'+page+'-empty').style.display=list.length?'none':'block';
+    sel.onchange=()=>{ state[page].app=sel.value; updateSummary(page); renderPrompt(page); };
+  }
+  function updateSummary(page){
+    const s=state[page];
+    $('#'+page+'-summary').innerHTML='<span>当前接入</span><span class="sep">·</span><span>项目：<b>'+(s.project||'未选择')+'</b></span><span class="sep">·</span><span>应用：<b>'+(s.app||'未选择')+'</b></span>';
+    if(page==='ctrl'){
+      $('#ctrl-range-project').textContent=s.project||'未选择';
+      $('#ctrl-range-scope').textContent=s.scope==='read'?'只读查询':'查询 + 设备控制';
+    }
+  }
+  fillProjects('app'); fillProjects('ctrl');
+  // 锁项目的演示：把项目固定为第一个，并说明原因
+  state.app.project='滨江桥梁监测'; $('#app-project').value=state.app.project;
+  $('#app-project').disabled=true; $('#app-lock').classList.remove('hidden'); fillApps('app'); updateSummary('app');
+  fillApps('ctrl');
+
+  /* ---------- control page options ---------- */
+  $$('.radio-card[data-scope]').forEach(c=>c.addEventListener('click',()=>{
+    state.ctrl.scope=c.dataset.scope;
+    $$('.radio-card[data-scope]').forEach(x=>x.classList.toggle('selected',x===c));
+    updateSummary('ctrl'); renderPrompt('ctrl');
+  }));
+  $('#ctrl-confirm').addEventListener('click',()=>{
+    state.ctrl.confirm=!state.ctrl.confirm;
+    $('#ctrl-confirm').classList.toggle('on',state.ctrl.confirm);
+    renderPrompt('ctrl');
+  });
+  $('#ctrl-test').addEventListener('click',()=>{
+    $('#ctrl-test-result').textContent=' 原型演示：已返回该项目下 12 台设备，未下发任何控制指令。';
+    toast('试连成功（只读）');
+  });
+
+  /* ---------- prompt rendering ---------- */
+  function renderPrompt(page){
+    if(page==='app'){
+      const s=state.app, n=$('#app-name').value||'未命名应用';
+      const text=[
+        '请使用 alinkiot-app skill 为 ALinkIOT 项目「'+(s.project||'未选择')+'」生成一个 Python + MySQL 物联网应用。',
+        '如未安装 skill：'+location.origin+'/skills/uzyiot-api.zip（依赖）与 alinkiot-app.zip。',
+        '需求：'+n+' / '+($('#app-scene').value)+' / 设备规模 '+($('#app-scale').value)+' / 数据库 '+($('#app-db').value)+'。',
+        ($('#app-note').value ? '补充说明：'+$('#app-note').value : ''),
+        '设备数据来源：host=iot.uzycloud.com, appId='+(s.app||'')+', Secret='+mask(DEMO_SECRET)+'。',
+        '先确认项目下的产品、设备类型和规模，再询问我其他需求。'
+      ].filter(Boolean).join('\n');
+      $('#app-prompt').textContent=text;
+      $('#app-appid').textContent=s.app||'—';
+      $('#app-secret-real').textContent=DEMO_SECRET;
+      $('#app-secret').textContent=s.reveal?DEMO_SECRET:mask(DEMO_SECRET);
+    }
+    if(page==='ctrl'){
+      const s=state.ctrl;
+      const scope=s.scope==='read'?'只允许查询项目、场景、设备与历史数据，不要调用任何控制接口。':'允许查询数据，并可下发设备控制指令；'+(s.confirm?'每条控制指令执行前必须先向我确认。':'控制指令可直接执行。');
+      const text=[
+        '请使用 uzyiot-api skill 操作 ALinkIOT 平台。',
+        '在 skill 目录新建 env.ini：',
+        'host=iot.uzycloud.com',
+        'appId='+(s.app||''),
+        'Secret='+mask(DEMO_SECRET),
+        '权限范围：'+scope,
+        '登录后先确认所属项目与可访问设备，再等待我的指令。'
+      ].join('\n');
+      $('#ctrl-prompt').textContent=text;
+      $('#ctrl-appid').textContent=s.app||'—';
+      $('#ctrl-secret-real').textContent=DEMO_SECRET;
+      $('#ctrl-secret').textContent=s.reveal?DEMO_SECRET:mask(DEMO_SECRET);
+    }
+    if(page==='remote'){
+      const s=state.remote;
+      if(!s.enabled){ $('#remote-prompt').textContent='通道未启动。启动后会生成一次性令牌与连接参数。'; return; }
+      $('#remote-prompt').textContent=[
+        '请使用 erl-cli skill 通过 WebSocket 连接远程 ALinkIOT 节点进行调试。',
+        '如未安装：'+location.origin+'/skills/erl-cli.zip。',
+        '连接参数：host=iot.uzycloud.com, port=443, token='+mask(s.token),
+        '令牌到期时间：'+new Date(s.expireAt).toLocaleString('zh-CN'),
+        '连接后先执行节点概览检查，确认节点和集群情况，然后等待我的调试指令。'
+      ].join('\n');
+      $('#remote-token-real').textContent=s.token;
+      $('#remote-token').textContent=s.reveal?s.token:mask(s.token);
+    }
+  }
+  ['app-name','app-scene','app-scale','app-db','app-note'].forEach(id=>$('#'+id).addEventListener('input',()=>renderPrompt('app')));
+
+  /* ---------- credential reveal / copy ---------- */
+  $$('[data-reveal]').forEach(b=>b.addEventListener('click',()=>{
+    const p=b.dataset.reveal; state[p].reveal=!state[p].reveal; renderPrompt(p);
+  }));
+  $$('[data-copy-field]').forEach(b=>b.addEventListener('click',async()=>{
+    const text=$('#'+b.dataset.copyField).textContent;
+    const ok=await copyText(text);
+    toast(ok?(b.dataset.copyField.indexOf('secret')>=0||b.dataset.copyField.indexOf('token')>=0?'已复制完整凭证，请勿粘贴到公开渠道':'已复制'):'复制失败，请手动选中文本复制',ok?'':'err');
+  }));
+  $$('[data-copy-literal]').forEach(b=>b.addEventListener('click',async()=>{
+    const ok=await copyText(b.dataset.copyLiteral); toast(ok?'已复制':'复制失败，请手动选中复制',ok?'':'err');
+  }));
+  $$('[data-copy-prompt]').forEach(b=>b.addEventListener('click',async()=>{
+    const p=b.dataset.copyPrompt, preview=$('#'+p+'-prompt').textContent;
+    // 预览里遮蔽，复制时才填入完整凭证
+    const text=p==='remote'
+      ? preview.replace(mask(state.remote.token),state.remote.token)
+      : preview.replace(mask(DEMO_SECRET),DEMO_SECRET);
+    const ok=await copyText(text);
+    toast(ok?'已复制完整提示词（含凭证），请勿粘贴到公开群聊':'复制失败，请手动选中提示词复制',ok?'':'err');
+  }));
+  $$('[data-download]').forEach(b=>b.addEventListener('click',()=>toast('原型演示：模拟下载 '+b.dataset.download)));
+  $$('[data-demo]').forEach(b=>b.addEventListener('click',()=>toast('原型演示：'+b.dataset.demo)));
+  $$('.check-item input').forEach(i=>i.addEventListener('change',()=>{
+    const box=i.closest('.checklist'); if(!box) return;
+    const all=$$('input',box), done=all.filter(x=>x.checked).length;
+    const line=box.parentElement.querySelector('[data-progress]');
+    if(line) line.textContent='已完成 '+done+' / '+all.length;
+  }));
+
+  /* ---------- remote lifecycle ---------- */
+  function renderRemote(){
+    const s=state.remote;
+    const active=s.enabled && s.expireAt>Date.now();
+    $('#remote-dot-small').classList.toggle('on',active);
+    $('#remote-state-small').textContent=active?'已启动':'未启动';
+    $('#remote-start').disabled=active;
+    if(!active){
+      $('#remote-countdown').textContent='--:--:--';
+      $('#remote-progress').style.width='0%';
+      $('#remote-expire').textContent='到期时间：—';
+      $('#remote-dot') && $('#remote-dot').classList.remove('on');
+      $('#remote-token').textContent='—';
+      return;
+    }
+    const left=s.expireAt-Date.now();
+    const h=Math.floor(left/3600000), m=Math.floor(left%3600000/60000), sec=Math.floor(left%60000/1000);
+    $('#remote-countdown').textContent=[h,m,sec].map(n=>String(n).padStart(2,'0')).join(':');
+    $('#remote-progress').style.width=(left/s.totalMs*100).toFixed(2)+'%';
+    $('#remote-expire').textContent='到期时间：'+new Date(s.expireAt).toLocaleString('zh-CN');
+    $('#remote-dot') && $('#remote-dot').classList.add('on');
+    renderPrompt('remote');
+  }
+  function makeToken(){ return 'tk_live_'+Math.random().toString(16).slice(2,10); }
+  function startRemote(){
+    const s=state.remote;
+    s.hours=Number($('#remote-hours').value);
+    s.enabled=true; s.reveal=false; s.token=makeToken();
+    s.totalMs=s.hours*3600000; s.expireAt=Date.now()+s.totalMs;
+    toast('通道已启动，有效期 '+s.hours+' 小时');
+    go('remote',2);
+  }
+  $('#remote-start').addEventListener('click',()=>{
+    if(!$('#remote-ack').checked){ toast('请先勾选风险确认','err'); return; }
+    startRemote();
+  });
+  $$('[data-regen]').forEach(b=>b.addEventListener('click',()=>{
+    confirmDialog('重新生成令牌？','旧令牌立即失效，正在使用的智能体会断开。确认重新生成？',()=>{
+      const s=state.remote; s.token=makeToken(); s.reveal=false;
+      s.totalMs=s.hours*3600000; s.expireAt=Date.now()+s.totalMs;
+      toast('已生成新令牌，旧令牌已失效'); renderRemote();
+    });
+  }));
+  $$('[data-stop]').forEach(b=>b.addEventListener('click',()=>{
+    confirmDialog('停止调试通道？','停止后令牌立即失效，已建立的连接最长 5 分钟内断开，正在执行的调试会中断。确认停止？',()=>{
+      const s=state.remote; s.enabled=false; s.token=''; s.reveal=false; s.expireAt=0;
+      $('#remote-ack').checked=false;
+      toast('通道已停止，令牌已失效');
+      go('remote',1); renderRemote();
+    });
+  }));
+  setInterval(()=>{
+    const s=state.remote;
+    if(s.enabled && s.expireAt<=Date.now()){
+      s.enabled=false; s.token=''; s.expireAt=0;
+      toast('令牌已到期，通道自动关闭','err');
+      go('remote',1);
+    }
+    if(s.enabled) renderRemote();
+  },1000);
+
+  /* ---------- init ---------- */
+  renderPrompt('app'); renderPrompt('ctrl'); renderPrompt('remote');
+  go('app',1); go('ctrl',1); go('remote',1);
+  switchPage('app');
+})();
+</script>
+</body>
+</html>
