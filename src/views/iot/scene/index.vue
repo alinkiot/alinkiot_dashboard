@@ -335,7 +335,13 @@ export default {
       return this.project.title || '项目';
     }
   },
-  created() {
+  async created() {
+    // 从项目进入时，默认选中并展开当前项目
+    const current = await this.$store.dispatch('settings/ResolveProject');
+    if (current) {
+      this.project = current;
+      this.defaultOpenedProjects = [String(current.id)];
+    }
     this.getProjects();
     this.getList();
   },
