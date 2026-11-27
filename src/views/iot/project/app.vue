@@ -199,6 +199,7 @@ export default {
       form: { name: '', appid : '',  secret:'', expire:7200, syncStatus: 'wait' },
       projects: [],
       projectOptions: [],
+      currentProjectId: undefined,
       // 表单校验
       rules: {
         name: [
@@ -216,7 +217,7 @@ export default {
       }
     };
   },
-  created() {
+  async created() {
     this.column = [
       {label:'ID', key:'id', width:40},
       {label:'应用名称', key:'name', isSearch: true, regx: true},
@@ -224,6 +225,12 @@ export default {
       // {label:'AppID', key:'appid'},
       {label:'备注', key:'remark'}
     ];
+    // 从项目进入时，默认只看当前项目的应用，新建应用也默认归属当前项目
+    const current = await this.$store.dispatch('settings/ResolveProject');
+    if (current) {
+      this.currentProjectId = current.id;
+      this.queryParams.project = current.id;
+    }
     this.getProjectOptions();
     this.getList();
   },
@@ -337,7 +344,8 @@ export default {
         appid: '',
         secret: '',
         expire: 7200,
-        syncStatus: 'wait'
+        syncStatus: 'wait',
+        project: this.currentProjectId
       };
       this.resetForm("createForm");
     },
