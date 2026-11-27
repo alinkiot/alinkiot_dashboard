@@ -319,9 +319,15 @@ export default {
     if (screenfull.isEnabled) {
       screenfull.on('change', this.fullscreenChange)
     }
-    this.fetchData()
     this.initMap()
-    this.refreshTimer = setInterval(this.fetchData, 60 * 1000)
+    // 从项目进入时默认展示当前项目，标题栏仍可切换
+    this.$store.dispatch('settings/ResolveProject').then((current) => {
+      if (current && !this.project) this.project = current
+    }).finally(() => {
+      if (this._isDestroyed) return
+      this.fetchData()
+      this.refreshTimer = setInterval(this.fetchData, 60 * 1000)
+    })
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
