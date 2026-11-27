@@ -1,9 +1,12 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="search-form">
-      <InputTableSelect :read="isRead('project')"
-                        :queryId="project.id" showColumn="title" label="所属项目" table="project"
-                        @selectDone="selectProjectDone"/>
+      <el-form-item label="所属项目">
+        <el-select v-model="projectId" placeholder="全部项目" clearable filterable
+                   :disabled="isRead('project')" @change="selectProjectChange">
+          <el-option v-for="item in projectOptions" :key="item.id" :label="item.title" :value="item.id"/>
+        </el-select>
+      </el-form-item>
       <InputTableSelect showColumn="name" label="所属产品" :read="isRead('product')"
                         :queryId="product.id"  table="product"
                         @selectDone="selectProductDone"/>
@@ -94,7 +97,7 @@
 </template>
 
 <script>
-import {  delObject, createObject, updateObject } from "@/api/iot/table";
+import {  delObject, createObject, updateObject, queryObject } from "@/api/iot/table";
 import InputTableSelect from "@/components/InputTableSelect";
 import DeviceForm from "./components/deviceForm.vue";
 import DeviceTable from "./components/deviceTable.vue"
@@ -119,6 +122,9 @@ export default {
       // 非多个禁用
       multiple: true,
       project: {},
+      // 所属项目下拉框
+      projectId: undefined,
+      projectOptions: [],
       product:{},
       tableList: [],
       // 显示搜索条件
@@ -160,7 +166,7 @@ export default {
     const status = this.$route.query.status;
     const nodeType = this.$route.query.nodeType;
     if(projectId){
-      this.project.id = projectId;
+      this.project = { id: projectId };
       this.fixParams.push({key:'project', 'value': projectId});
     }
     if(productId){
@@ -183,6 +189,8 @@ export default {
         this.fixParams.push({key:'project', 'value': current.id});
       }
     }
+    this.projectId = this.project.id;
+    this.loadProjectOptions();
     this.getList();
   },
   watch: {
@@ -248,12 +256,34 @@ export default {
         this.product = {}
       }
     },
-    selectProjectDone(project) {
-      if(project){
-        this.project = project;
-      }else{
-        this.project = {};
-      }
+    selectProjectChange(projectId) {
+      const target = this.projectOptions.find(item => String(item.id) === String(projectId));
+      this.project = target || (projectId ? { id: projectId } : {});
+    },
+    // 加载所属项目下拉列表；路由里的项目 ID 是字符串，加载后换成选项里的原始值以便显示名称
+    loadProjectOptions() {
+      const pageSize = 100;
+      const options = [];
+      const ids = new Set();
+      const loadPage = pageNum => queryObject('project', { pageNum, pageSize }).then(response => {
+        const rows = Array.isArray(response.rows) ? response.rows : [];
+        rows.forEach(item => {
+          if (!ids.has(String(item.id))) {
+            ids.add(String(item.id));
+            options.push(item);
+          }
+        });
+        const total = Number(response.total);
+        if ((total > 0 && options.length < total) && rows.length === pageSize) {
+          return loadPage(pageNum + 1);
+        }
+        this.projectOptions = options;
+        if (this.projectId !== undefined && this.projectId !== '') {
+          const matched = options.find(item => String(item.id) === String(this.projectId));
+          if (matched) this.projectId = matched.id;
+        }
+      });
+      loadPage(1).catch(() => {});
     },
     /** 搜索按钮操作 */
     handleQuery() {

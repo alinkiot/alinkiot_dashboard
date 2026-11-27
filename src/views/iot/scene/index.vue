@@ -28,6 +28,7 @@
               placeholder="全部项目"
               clearable
               filterable
+              :disabled="projectLocked"
               @change="handleProjectFilter"
             >
               <el-option
@@ -316,6 +317,8 @@ export default {
       projectList: [],
       // 按项目过滤：有值时左侧只显示该项目
       filterProjectId: '',
+      // 从项目进入时锁定项目，与其它页面一致
+      projectLocked: false,
       // el-menu 的 default-openeds 只在挂载时生效，切换过滤时通过改 key 重建菜单
       menuKey: 0,
       scenesMap: {},
@@ -368,6 +371,7 @@ export default {
     if (current) {
       this.project = current;
       this.filterProjectId = current.id;
+      this.projectLocked = true;
       this.defaultOpenedProjects = [String(current.id)];
     }
     this.getProjects();

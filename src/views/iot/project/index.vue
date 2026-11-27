@@ -22,7 +22,7 @@
       </el-col>
       <el-col :span="1.5">
         <el-button
-            :type="selectionMode ? 'danger' : 'default'"
+            type="danger"
             icon="el-icon-delete"
             size="mini"
             @click="handleDeleteClick"
@@ -351,9 +351,8 @@ export default {
     },
     goProject(type, project) {
       if(type === 'logout'){
-        this.$store.dispatch('LogOut').then(() => {
-          location.href = '/' + toProject(project.name) + '/login';
-        })
+        // 退出项目：保留登录状态，回到不带项目前缀的根路径
+        location.href = '/index';
       }else{
         // 使用 siteInfo 接口按 project 查询参数检测站点配置是否存在。
         // 注意：不能用 listConfig，因为 request 拦截器会把当前激活项目写入

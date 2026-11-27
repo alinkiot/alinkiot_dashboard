@@ -1,6 +1,6 @@
-# 远程调试(erl-cli)
+# 智能运维(erl-cli)
 
-系统管理下的"远程调试"页面可以启动 erl-cli 的 `/debug` 通道。启动时随机生成一个令牌,持有令牌的人可以用 erl-cli(配合 erl-cli skill)连接后端节点,执行 eval、trace、热更新、下载文件等操作。
+"智能体应用 / 智能运维"页面(原"系统管理 / 远程调试")可以启动 erl-cli 的 `/debug` 通道。启动时随机生成一个令牌,持有令牌的人可以用 erl-cli(配合 erl-cli skill)连接后端节点,执行 eval、trace、热更新、下载文件等操作。
 
 它是平台级功能,和应用、项目都没有关联。
 
@@ -14,17 +14,18 @@ erl-cli 的 `eval` 等同于在后端节点上执行任意 Erlang 代码,`load` 
 
 ## 使用
 
-1. 打开"系统管理 / 远程调试",设置有效期(1 到 168 小时,默认 24),点"启动"。
-2. 页面显示令牌和连接示例,复制后用 erl-cli 连接:
+1. 打开"智能体应用 / 智能运维",设置有效期(1 到 168 小时,默认 24),点"启动"。
+2. 点"下载 SKILL",解压后把 `erl-cli` 目录放入智能体的 skills 目录。
+3. 点"复制提示词",发给智能体。提示词里带有 host、port、token,智能体按 SKILL 连接后端节点进行调试。也可以手动用脚本连接:
 
 ```bash
 python3 scripts/erl_cli.py eval "erlang:node()" \
     --host <后端地址> --port <端口> --path /debug --token <令牌>
 ```
 
-3. 连不上时回到页面查看状态,过期或节点重启过的话重新启动即可。"重新生成"会让旧令牌立即失效。
+4. 连不上时回到页面查看状态,过期或节点重启过的话重新启动即可。"重新生成"会让旧令牌立即失效。
 
-`scripts/erl_cli.py` 来自 erl-cli 仓库(也在 `alinkiot/_build/default/lib/erl_cli/scripts/`),依赖 `pip install websocket-client`。skill 说明见同目录的 `SKILL.md`。
+SKILL 包是前端的静态文件 `public/skills/erl-cli.zip`,只包含 SKILL 部分(`SKILL.md`、`README.md`、`scripts/`),不含 Erlang 应用部分。由 `build/skill-zip.sh` 从后端依赖 `../alinkiot/_build/default/lib/erl_cli` 打包,和后端锁定的 erl-cli 版本一致;erl-cli 升级后重新执行并提交 zip。同一个脚本也负责打包"智能控制"用的 `uzyiot-api.zip`(来自 skill-alinkiot-api)和"智能应用"用的 `alinkiot-app.zip`(来自 skill-alinkiot-app,包含 `framework/`、`themes/`、`references/`)。脚本依赖 `pip install websocket-client`。
 
 端口:直连后端用 `dashboard.port`(默认 18888);经 nginx 访问用 nginx 的端口。`erl_cli.py` 只支持 `ws://`,不支持 `wss://`,所以不能直接连 https 域名。
 
@@ -34,7 +35,7 @@ python3 scripts/erl_cli.py eval "erlang:node()" \
 |---|---|
 | 令牌存储(mnesia 内存表)与认证 | `alinkiot_data/src/alinkdata_remote_auth.erl` |
 | 接口 `GET /system/remote/status`、`POST /system/remote/start`、`POST /system/remote/stop` | `alinkiot_data/src/service/alinkdata_remote_service.erl`,路由与权限在 `swagger_global.json` |
-| 菜单与权限 | `alinkiot-compose/init/mysql/migrations/20261127_menu_is_top_remote_debug.sql` |
+| 菜单与权限 | `alinkiot-compose/init/mysql/migrations/20261127_menu_is_top_remote_debug.sql`,`20261127_agent_ops_menu.sql`(移到"智能体运维"下),`20261128_agent_app_menu.sql`(应用生成,后改名"智能应用"),`20261128_agent_menu_rename_reorder.sql`(改名"智能体应用"并排到仪表盘之后) |
 | 前端页面 | `src/views/system/remote/index.vue`,`src/api/system/remote.js` |
 
 认证规则(`alinkdata_remote_auth:check_auth/2`)有两条,满足任意一条即放行:

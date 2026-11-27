@@ -49,7 +49,8 @@ router.beforeEach((to, from, next) => {
       }).catch(err => {
         store.dispatch('LogOut').then(() => {
           Message.error(err)
-          next({ path: '/' })
+          // 退出登录后留在当前项目
+          next({ path: project ? '/' + toProject(project) + '/login' : '/login' })
         })
       })
     } else {

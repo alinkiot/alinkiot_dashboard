@@ -125,7 +125,10 @@ function handle_request(res, code) {
       ).then(() => {
         isRelogin.show = false;
         store.dispatch('LogOut').then(() => {
-          location.href = '/index';
+          // 退出登录后留在当前项目：从项目进入的回到项目登录页
+          // 前缀规则同 api/iot/system.js 的 toProject；那里引用了本文件，这里直接拼接以免循环依赖
+          const project = store.state.settings.project;
+          location.href = project ? '/p-' + project + '/login' : '/login';
         })
       }).catch(() => {
         isRelogin.show = false;

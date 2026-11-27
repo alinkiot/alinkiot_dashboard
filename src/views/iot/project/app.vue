@@ -7,6 +7,7 @@
           placeholder="全部项目"
           clearable
           filterable
+          :disabled="!!currentProjectId"
           @change="handleQuery"
         >
           <el-option label="全部项目" value="" />

@@ -6,6 +6,7 @@
           v-model="selectedProjectId"
           placeholder="请选择项目"
           filterable
+          :disabled="projectLocked"
           @change="handleProjectChange"
         >
           <el-option
@@ -76,7 +77,7 @@
               <el-tag>{{getCfgType(scope.row.configKey)}}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="项目标识" align="center" prop="project" />
+          <el-table-column v-if="!projectLocked" label="所属项目" align="center" prop="project" :formatter="formatProject" :show-overflow-tooltip="true" />
           <el-table-column label="参数说明" prop="remark" :show-overflow-tooltip="true" />
           <el-table-column label="前端配置" align="center" width="80">
             <template slot-scope="scope">
@@ -236,6 +237,8 @@ export default {
       projects: [],
       projectOptions: [],
       selectedProjectId: undefined,
+      // 路由指定项目或从项目进入时锁定项目，与设备列表一致
+      projectLocked: false,
       isCreate: true,
       // 表单参数
       form: {},
@@ -285,7 +288,7 @@ export default {
   },
   methods: {
     // 从当前路由初始化配置页（切换项目/项目ID 时可重复调用以刷新）
-    initFromRoute() {
+    async initFromRoute() {
       this.reset();
       // 重置选中项目与查询，避免沿用上一个项目的状态
       this.project = undefined;
@@ -296,9 +299,15 @@ export default {
       if(configKey){
         this.queryParams.configKey = configKey;
       }
-      const routeProjectId = this.$route.query.projectId;
-      // 加载项目列表，加载完后：优先用路由指定的项目，否则默认选第一个
-      this.loadProjectOptions(routeProjectId ? String(routeProjectId) : undefined);
+      let preferProjectId = this.$route.query.projectId;
+      // 路由没有显式指定项目时，从项目进入则默认选中当前项目
+      if (!preferProjectId) {
+        const current = await this.$store.dispatch('settings/ResolveProject');
+        if (current) preferProjectId = current.id;
+      }
+      this.projectLocked = !!preferProjectId;
+      // 加载项目列表，加载完后：优先用路由指定的项目，其次当前项目，否则默认选第一个
+      this.loadProjectOptions(preferProjectId ? String(preferProjectId) : undefined);
     },
     // 加载项目下拉列表，加载完后自动选中 preferProjectId 指定的项目（不传则选第一个）
     loadProjectOptions(preferProjectId) {
@@ -321,10 +330,12 @@ export default {
         }
         this.projectOptions = projectOptions;
         if (projectOptions.length > 0) {
-          // 优先用路由指定的项目，找不到则回退到第一个
-          const target = preferProjectId
-            ? (projectOptions.find(p => String(p.id) === preferProjectId) || projectOptions[0])
-            : projectOptions[0];
+          // 优先用路由指定的项目，找不到则回退到第一个（回退时不锁定）
+          const preferred = preferProjectId
+            ? projectOptions.find(p => String(p.id) === preferProjectId)
+            : undefined;
+          if (!preferred) this.projectLocked = false;
+          const target = preferred || projectOptions[0];
           this.selectedProjectId = target.id;
           this.selectProjectDone(target);
         }
@@ -332,6 +343,12 @@ export default {
         this.$modal && this.$modal.msgError && this.$modal.msgError('项目列表加载失败');
       });
       loadPage(1);
+    },
+    // 表格中按项目标识显示项目名称，项目已不存在时显示原标识
+    formatProject(row) {
+      const name = row.project;
+      const matched = this.projectOptions.find(p => p.name === name);
+      return matched ? matched.title : name;
     },
     getConfigIcon(configKey) {
       const iconMap = {
