@@ -33,7 +33,7 @@
                   <div class="stat-icon"><i class="el-icon-connection" /></div>
                   <div class="stat-info">
                     <div class="stat-value online">{{ stats.deviceOnline }}</div>
-                    <div class="stat-label">在线设备</div>
+                    <div class="stat-label">在线设备 · {{ stats.onlineRate }}%</div>
                   </div>
                 </div>
                 <div class="stat-item is-offline">
@@ -47,7 +47,7 @@
                   <div class="stat-icon"><i class="el-icon-cpu" /></div>
                   <div class="stat-info">
                     <div class="stat-value total">{{ stats.deviceTotal }}</div>
-                    <div class="stat-label">设备总数</div>
+                    <div class="stat-label">设备总数 · 今日 +{{ stats.todayNew }}</div>
                   </div>
                 </div>
                 <div class="stat-item is-product">
@@ -65,7 +65,7 @@
         <!-- 左列第2格：设备上线趋势 -->
         <div class="grid-cell cell-l2">
           <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />设备上线趋势</div>
+            <div class="card-title"><span class="title-bar" />设备在线趋势(24h)</div>
             <div class="card-body">
               <div ref="deviceTrendChart" class="chart-container" />
             </div>
@@ -174,7 +174,9 @@
         <!-- 右列第2格：告警统计 -->
         <div class="grid-cell cell-r2">
           <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />告警统计</div>
+            <div class="card-title"><span class="title-bar" />告警统计
+              <span class="alarm-sub">今日 {{ stats.alarmToday }} · 待确认 {{ stats.alarmUnconfirmed }}</span>
+            </div>
             <div class="card-body">
               <div ref="alarmChart" class="chart-container" />
             </div>
@@ -184,7 +186,7 @@
         <!-- 右列第3格：7日告警趋势 -->
         <div class="grid-cell cell-r3">
           <div class="panel-card">
-            <div class="card-title"><span class="title-bar" />告警趋势</div>
+            <div class="card-title"><span class="title-bar" />告警趋势(7天)</div>
             <div class="card-body">
               <div ref="alarmTrendChartSide" class="chart-container" />
             </div>
@@ -195,19 +197,19 @@
       <!-- 底部面板 -->
       <div class="screen-footer">
         <div class="footer-card">
-          <div class="card-title"><span class="title-bar" />每日设备新增</div>
+          <div class="card-title"><span class="title-bar" />每日设备新增(30天)</div>
           <div class="card-body">
-            <div ref="messageChart" class="chart-container" />
+            <div ref="deviceDailyChart" class="chart-container" />
           </div>
         </div>
         <div class="footer-card">
-          <div class="card-title"><span class="title-bar" />24h 在线设备</div>
+          <div class="card-title"><span class="title-bar" />设备地区分布</div>
           <div class="card-body">
-            <div ref="deviceTrendChartBottom" class="chart-container" />
+            <div ref="areaChart" class="chart-container" />
           </div>
         </div>
         <div class="footer-card">
-          <div class="card-title"><span class="title-bar" />消息上报统计</div>
+          <div class="card-title"><span class="title-bar" />消息上报统计(7天)</div>
           <div class="card-body">
             <div ref="messageTrendChart" class="chart-container" />
           </div>
@@ -259,8 +261,13 @@ export default {
         deviceOnline: 0,
         deviceTotal: 0,
         deviceOffline: 0,
-        productTotal: 0
+        productTotal: 0,
+        onlineRate: 0,
+        todayNew: 0,
+        alarmToday: 0,
+        alarmUnconfirmed: 0
       },
+      refreshTimer: null,
       deviceMarkers: [],
       alarmList: [],
       scrollTop: 0,
@@ -314,6 +321,7 @@ export default {
     }
     this.fetchData()
     this.initMap()
+    this.refreshTimer = setInterval(this.fetchData, 60 * 1000)
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize)
@@ -322,6 +330,7 @@ export default {
     }
     clearInterval(this.clockTimer)
     clearInterval(this.scrollTimer)
+    clearInterval(this.refreshTimer)
     this.chartInstances.forEach((c) => c && c.dispose())
   },
   watch: {
@@ -444,20 +453,18 @@ export default {
       get_dashboard_info(params).then((res) => {
         if (res.code === 200 && res.data) {
           const data = res.data
-          // 设备统计
+          // 设备、产品统计
           if (data.device) {
             this.stats.deviceTotal = data.device.all_device || 0
             this.stats.deviceOnline = data.device.online_device || 0
-            this.stats.deviceOffline = (data.device.all_device || 0) - (data.device.online_device || 0)
+            this.stats.deviceOffline = data.device.offline_device || 0
+            this.stats.onlineRate = data.device.online_rate || 0
+            this.stats.todayNew = data.device.today_new || 0
           }
-          // 产品统计
           if (data.product) {
             this.stats.productTotal = data.product.all_product || 0
           }
-          // 告警统计 - 更新饼图
-          if (data.alarm && data.alarm.detail) {
-            this.updateAlarmChart(data.alarm.detail)
-          }
+          this.applyAlarm(data.alarm)
           // 实时告警列表
           if (data.recentAlarms) {
             const levelMap = { '1': 'high', '2': 'medium', '3': 'low' }
@@ -503,29 +510,14 @@ export default {
               }))
             this.fitMapView()
           }
-          // 每日设备新增
-          if (data.deviceDaily) {
-            this.updateDeviceDailyChart(data.deviceDaily)
-          }
+          this.applyDeviceDaily(data.deviceDaily)
+          this.applyAlarmDaily(data.alarmDaily)
+          this.applyProductDist(data.productDist)
+          this.applyAreaDist(data.areaDist)
+          this.applyDeviceTrend(data.onlineTrend)
+          this.applyMessageDaily(data.messageDaily)
         }
       }).catch(() => {})
-    },
-
-    updateAlarmChart(detail) {
-      const levelNameMap = { '1': '紧急', '2': '警告', '3': '提示' }
-      const accent = this.themePalette().accent
-      const levelColorMap = { '1': '#f56c6c', '2': '#e6a23c', '3': accent }
-      const chartData = detail.map((item) => ({
-        value: item.count,
-        name: levelNameMap[item.level] || item.level,
-        itemStyle: { color: levelColorMap[item.level] || accent }
-      }))
-      const chart = this._charts && this._charts.alarm
-      if (chart) {
-        chart.setOption({
-          series: [{ data: chartData }]
-        })
-      }
     },
 
     fitMapView() {
@@ -612,327 +604,282 @@ export default {
       this.initDeviceTrendChart()
       this.initAlarmChart()
       this.initProductChart()
-      this.initMessageChart()
-      this.initAlarmTrendChartSide()
-      this.initDeviceTrendChartBottom()
+      this.initDeviceDailyChart()
+      this.initAlarmTrendChart()
+      this.initAreaChart()
       this.initMessageTrendChart()
     },
 
-    initDeviceTrendChart() {
-      if (!this.$refs.deviceTrendChart) return
-      const chart = echarts.init(this.$refs.deviceTrendChart)
+    // ---------- 图表：构建 ----------
+    mountChart(key, ref) {
+      const el = this.$refs[ref]
+      if (!el) return null
+      const chart = echarts.init(el)
       this._charts = this._charts || {}
-      this._charts.deviceTrend = chart
+      this._charts[key] = chart
       this.chartInstances.push(chart)
-      const p = this.themePalette()
-      const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
-      chart.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { top: 20, right: 10, bottom: 24, left: 38 },
-        xAxis: {
-          type: 'category',
-          data: hours,
-          boundaryGap: false,
-          axisLabel: { color: p.dim, fontSize: 9, interval: 5 },
-          axisTick: { alignWithLabel: true },
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split }},
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        series: [
-          {
-            name: '在线设备',
-            type: 'line',
-            smooth: true,
-            showSymbol: false,
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: p.areaTop },
-                { offset: 1, color: p.areaBottom }
-              ])
-            },
-            lineStyle: { color: p.accent, width: 2, shadowColor: p.lineShadow, shadowBlur: 8 },
-            itemStyle: { color: p.accent },
-            data: hours.map(() => Math.floor(80 + Math.random() * 60))
-          }
-        ]
-      })
+      return chart
     },
 
-    initAlarmChart() {
-      if (!this.$refs.alarmChart) return
-      const chart = echarts.init(this.$refs.alarmChart)
-      this._charts = this._charts || {}
-      this._charts.alarm = chart
-      this.chartInstances.push(chart)
-      const p = this.themePalette()
-      chart.setOption({
-        tooltip: { trigger: 'item' },
-        legend: {
-          bottom: 0,
-          textStyle: { color: p.dim, fontSize: 10 }
-        },
-        series: [
-          {
-            type: 'pie',
-            radius: ['42%', '66%'],
-            center: ['50%', '45%'],
-            avoidLabelOverlap: true,
-            itemStyle: { borderColor: 'rgba(6,21,39,0.8)', borderWidth: 2 },
-            label: { show: false },
-            emphasis: {
-              scale: true,
-              scaleSize: 6,
-              itemStyle: { shadowBlur: 16, shadowColor: `rgba(${p.accentRgb}, 0.5)` }
-            },
-            data: [
-              { value: 12, name: '紧急', itemStyle: { color: '#f56c6c' }},
-              { value: 28, name: '警告', itemStyle: { color: '#e6a23c' }},
-              { value: 45, name: '提示', itemStyle: { color: p.accent }}
-            ]
-          }
-        ]
-      })
-    },
-
-    initProductChart() {
-      if (!this.$refs.productChart) return
-      const chart = echarts.init(this.$refs.productChart)
-      this._charts = this._charts || {}
-      this._charts.product = chart
-      this.chartInstances.push(chart)
-      const p = this.themePalette()
-      const products = ['传感器', '控制器', '网关', '摄像头', '执行器']
-      chart.setOption({
+    // 类目轴 + 数值轴的通用配置
+    axisChartOption(p, grid) {
+      return {
         tooltip: { trigger: 'axis' },
-        grid: { top: 12, right: 10, bottom: 22, left: 38 },
-        xAxis: {
-          type: 'category',
-          data: products,
-          axisLabel: { color: p.dim, fontSize: 10 },
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split }},
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        series: [
-          {
-            type: 'bar',
-            barWidth: '45%',
-            itemStyle: {
-              borderRadius: [4, 4, 0, 0],
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: p.accent },
-                { offset: 1, color: `rgba(${p.accentRgb}, 0.15)` }
-              ])
-            },
-            data: [156, 89, 42, 35, 34]
-          }
-        ]
-      })
-    },
-
-    initMessageChart() {
-      if (!this.$refs.messageChart) return
-      const chart = echarts.init(this.$refs.messageChart)
-      this._charts = this._charts || {}
-      this._charts.message = chart
-      this.chartInstances.push(chart)
-      const p = this.themePalette()
-      chart.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { top: 15, right: 10, bottom: 24, left: 38 },
+        grid: Object.assign({ top: 15, right: 10, bottom: 24, left: 42 }, grid),
         xAxis: {
           type: 'category',
           data: [],
           axisLabel: { color: p.dim, fontSize: 10 },
-          axisLine: { lineStyle: { color: p.axis } }
+          axisLine: { lineStyle: { color: p.axis }}
         },
         yAxis: {
           type: 'value',
           minInterval: 1,
           axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split } },
-          axisLine: { lineStyle: { color: p.axis } }
+          splitLine: { lineStyle: { color: p.split }},
+          axisLine: { lineStyle: { color: p.axis }}
         },
-        series: [
-          {
-            name: '新增设备',
-            type: 'bar',
-            barWidth: '50%',
-            itemStyle: {
-              borderRadius: [4, 4, 0, 0],
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: p.accent },
-                { offset: 1, color: `rgba(${p.accentRgb}, 0.15)` }
-              ])
-            },
-            data: []
-          }
-        ]
-      })
+        series: []
+      }
     },
 
-    updateDeviceDailyChart(deviceDaily) {
-      const chart = this._charts && this._charts.message
+    barSeries(p, name, data, extra) {
+      return Object.assign({
+        name,
+        type: 'bar',
+        barWidth: '50%',
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: p.accent },
+            { offset: 1, color: `rgba(${p.accentRgb}, 0.15)` }
+          ])
+        },
+        data
+      }, extra)
+    },
+
+    lineSeries(p, name, data, color, rgb) {
+      return {
+        name,
+        type: 'line',
+        smooth: true,
+        showSymbol: false,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: `rgba(${rgb}, 0.45)` },
+            { offset: 1, color: `rgba(${rgb}, 0)` }
+          ])
+        },
+        lineStyle: { color, width: 2, shadowColor: p.lineShadow, shadowBlur: 8 },
+        itemStyle: { color },
+        data
+      }
+    },
+
+    initDeviceTrendChart() {
+      const chart = this.mountChart('deviceTrend', 'deviceTrendChart')
       if (!chart) return
-      const dates = deviceDaily.map((d) => dayjs(d.date).format('MM-DD'))
-      const counts = deviceDaily.map((d) => d.count)
+      const p = this.themePalette()
+      const opt = this.axisChartOption(p, { left: 38 })
+      opt.xAxis.boundaryGap = false
+      opt.series = [this.lineSeries(p, '在线设备', [], p.accent, p.accentRgb)]
+      chart.setOption(opt)
+    },
+
+    initAlarmChart() {
+      const chart = this.mountChart('alarm', 'alarmChart')
+      if (!chart) return
+      const p = this.themePalette()
       chart.setOption({
-        xAxis: { data: dates },
-        series: [{ data: counts }]
+        tooltip: { trigger: 'item' },
+        legend: { bottom: 0, textStyle: { color: p.dim, fontSize: 10 }},
+        series: [{
+          type: 'pie',
+          radius: ['42%', '66%'],
+          center: ['50%', '45%'],
+          avoidLabelOverlap: true,
+          itemStyle: { borderColor: 'rgba(6,21,39,0.8)', borderWidth: 2 },
+          label: { show: false },
+          emphasis: {
+            scale: true,
+            scaleSize: 6,
+            itemStyle: { shadowBlur: 16, shadowColor: `rgba(${p.accentRgb}, 0.5)` }
+          },
+          data: []
+        }]
       })
     },
 
-    initAlarmTrendChartSide() {
-      if (!this.$refs.alarmTrendChartSide) return
-      const chart = echarts.init(this.$refs.alarmTrendChartSide)
-      this._charts = this._charts || {}
-      this._charts.alarmTrendSide = chart
-      this.chartInstances.push(chart)
-      const days = Array.from({ length: 7 }, (_, i) =>
-        dayjs().subtract(6 - i, 'day').format('MM-DD')
-      )
+    initProductChart() {
+      const chart = this.mountChart('product', 'productChart')
+      if (!chart) return
       const p = this.themePalette()
-      chart.setOption({
-        tooltip: { trigger: 'axis' },
-        legend: {
-          top: 0,
-          textStyle: { color: p.dim, fontSize: 10 }
-        },
-        grid: { top: 25, right: 10, bottom: 22, left: 32 },
-        xAxis: {
-          type: 'category',
-          data: days,
-          axisLabel: { color: p.dim, fontSize: 9 },
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split }},
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        series: [
-          {
-            name: '紧急',
-            type: 'bar',
-            stack: 'alarm',
-            itemStyle: { color: '#f56c6c' },
-            data: days.map(() => Math.floor(Math.random() * 5))
-          },
-          {
-            name: '警告',
-            type: 'bar',
-            stack: 'alarm',
-            itemStyle: { color: '#e6a23c' },
-            data: days.map(() => Math.floor(3 + Math.random() * 8))
-          },
-          {
-            name: '提示',
-            type: 'bar',
-            stack: 'alarm',
-            itemStyle: { color: p.accent },
-            data: days.map(() => Math.floor(5 + Math.random() * 15))
-          }
-        ]
-      })
+      const opt = this.axisChartOption(p, { bottom: 22, left: 38, top: 12 })
+      opt.xAxis.axisLabel = { color: p.dim, fontSize: 10, interval: 0, formatter: this.shortLabel }
+      opt.series = [this.barSeries(p, '设备数', [], { barWidth: '45%' })]
+      chart.setOption(opt)
     },
 
-    initDeviceTrendChartBottom() {
-      if (!this.$refs.deviceTrendChartBottom) return
-      const chart = echarts.init(this.$refs.deviceTrendChartBottom)
-      this._charts = this._charts || {}
-      this._charts.deviceTrendBottom = chart
-      this.chartInstances.push(chart)
+    initDeviceDailyChart() {
+      const chart = this.mountChart('deviceDaily', 'deviceDailyChart')
+      if (!chart) return
       const p = this.themePalette()
-      const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
-      chart.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { top: 15, right: 10, bottom: 24, left: 38 },
-        xAxis: {
-          type: 'category',
-          data: hours,
-          boundaryGap: false,
-          axisLabel: { color: p.dim, fontSize: 9, interval: 5 },
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split }},
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        series: [
-          {
-            name: '在线设备',
-            type: 'line',
-            smooth: true,
-            showSymbol: false,
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: p.areaTop },
-                { offset: 1, color: p.areaBottom }
-              ])
-            },
-            lineStyle: { color: p.accent2, width: 2, shadowColor: p.lineShadow, shadowBlur: 8 },
-            itemStyle: { color: p.accent2 },
-            data: hours.map(() => Math.floor(80 + Math.random() * 60))
-          }
-        ]
-      })
+      const opt = this.axisChartOption(p, { left: 38 })
+      opt.series = [this.barSeries(p, '新增设备', [])]
+      chart.setOption(opt)
+    },
+
+    initAlarmTrendChart() {
+      const chart = this.mountChart('alarmTrend', 'alarmTrendChartSide')
+      if (!chart) return
+      const p = this.themePalette()
+      const opt = this.axisChartOption(p, { left: 38 })
+      const levels = [['紧急', '#f56c6c'], ['警告', '#e6a23c'], ['提示', p.accent]]
+      opt.series = levels.map(([name, color]) => ({
+        name, type: 'bar', stack: 'alarm', itemStyle: { color }, data: []
+      }))
+      chart.setOption(opt)
+    },
+
+    initAreaChart() {
+      const chart = this.mountChart('area', 'areaChart')
+      if (!chart) return
+      const p = this.themePalette()
+      const opt = this.axisChartOption(p, { left: 38 })
+      opt.xAxis.axisLabel = { color: p.dim, fontSize: 10, interval: 0, formatter: this.shortLabel }
+      opt.series = [this.barSeries(p, '设备数', [], { itemStyle: { borderRadius: [4, 4, 0, 0], color: p.accent2 }})]
+      chart.setOption(opt)
     },
 
     initMessageTrendChart() {
-      if (!this.$refs.messageTrendChart) return
-      const chart = echarts.init(this.$refs.messageTrendChart)
-      this._charts = this._charts || {}
-      this._charts.messageTrend = chart
-      this.chartInstances.push(chart)
+      const chart = this.mountChart('messageTrend', 'messageTrendChart')
+      if (!chart) return
       const p = this.themePalette()
-      const days = Array.from({ length: 7 }, (_, i) =>
-        dayjs().subtract(6 - i, 'day').format('MM-DD')
-      )
+      const opt = this.axisChartOption(p)
+      opt.series = [this.lineSeries(p, '上报消息数', [], p.accent2, p.accent2Rgb)]
+      chart.setOption(opt)
+    },
+
+    // ---------- 图表：填充 ----------
+    shortLabel(v) {
+      return v && v.length > 6 ? v.slice(0, 6) + '…' : v
+    },
+
+    // 近 n 天（含今天），元素为 dayjs 对象
+    lastDays(n) {
+      return Array.from({ length: n }, (_, i) => dayjs().subtract(n - 1 - i, 'day'))
+    },
+
+    // 没有数据时在图表中央显示提示
+    setEmpty(key, empty, text) {
+      const chart = this._charts && this._charts[key]
+      if (!chart) return
       chart.setOption({
-        tooltip: { trigger: 'axis' },
-        grid: { top: 15, right: 10, bottom: 24, left: 42 },
-        xAxis: {
-          type: 'category',
-          data: days,
-          axisLabel: { color: p.dim, fontSize: 10 },
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { color: p.dim, fontSize: 10 },
-          splitLine: { lineStyle: { color: p.split }},
-          axisLine: { lineStyle: { color: p.axis }}
-        },
-        series: [
-          {
-            name: '消息数',
-            type: 'line',
-            smooth: true,
-            showSymbol: false,
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: `rgba(${p.accent2Rgb}, 0.4)` },
-                { offset: 1, color: `rgba(${p.accent2Rgb}, 0)` }
-              ])
-            },
-            lineStyle: { color: p.accent2, width: 2 },
-            itemStyle: { color: p.accent2 },
-            data: days.map(() => Math.floor(5000 + Math.random() * 15000))
-          }
-        ]
+        title: {
+          show: empty,
+          text: text || '暂无数据',
+          left: 'center',
+          top: 'middle',
+          textStyle: { color: this.themePalette().dim, fontSize: 12, fontWeight: 'normal' }
+        }
       })
+    },
+
+    // rows 为 null 表示指标不可用，为空数组表示没有数据
+    applyDeviceTrend(rows) {
+      const chart = this._charts && this._charts.deviceTrend
+      if (!chart) return
+      const list = rows || []
+      chart.setOption({
+        xAxis: { data: list.map((r) => dayjs(r.time).format('HH:mm')) },
+        series: [{ data: list.map((r) => r.online_device) }]
+      })
+      this.setEmpty('deviceTrend', !list.length, rows ? '暂无数据' : '该项目暂无在线趋势')
+    },
+
+    applyAlarm(alarm) {
+      const detail = (alarm && alarm.detail) || []
+      this.stats.alarmToday = (alarm && alarm.today) || 0
+      this.stats.alarmUnconfirmed = (alarm && alarm.unconfirmed) || 0
+      const chart = this._charts && this._charts.alarm
+      if (!chart) return
+      const nameMap = { '1': '紧急', '2': '警告', '3': '提示' }
+      const accent = this.themePalette().accent
+      const colorMap = { '1': '#f56c6c', '2': '#e6a23c', '3': accent }
+      chart.setOption({
+        series: [{
+          data: detail.map((item) => ({
+            value: item.count,
+            name: nameMap[item.level] || item.level,
+            itemStyle: { color: colorMap[item.level] || accent }
+          }))
+        }]
+      })
+      this.setEmpty('alarm', !detail.length)
+    },
+
+    applyAlarmDaily(rows) {
+      const chart = this._charts && this._charts.alarmTrend
+      if (!chart) return
+      const days = this.lastDays(7)
+      const map = {}
+      ;(rows || []).forEach((r) => { map[`${r.date}|${r.level}`] = r.count })
+      chart.setOption({
+        xAxis: { data: days.map((d) => d.format('MM-DD')) },
+        series: ['1', '2', '3'].map((level) => ({
+          data: days.map((d) => map[`${d.format('YYYY-MM-DD')}|${level}`] || 0)
+        }))
+      })
+      this.setEmpty('alarmTrend', !(rows && rows.length))
+    },
+
+    applyProductDist(rows) {
+      const chart = this._charts && this._charts.product
+      if (!chart) return
+      const list = rows || []
+      chart.setOption({
+        xAxis: { data: list.map((r) => r.name) },
+        series: [{ data: list.map((r) => r.count) }]
+      })
+      this.setEmpty('product', !list.length)
+    },
+
+    applyDeviceDaily(rows) {
+      const chart = this._charts && this._charts.deviceDaily
+      if (!chart) return
+      const days = this.lastDays(30)
+      const map = {}
+      ;(rows || []).forEach((r) => { map[r.date] = r.count })
+      chart.setOption({
+        xAxis: { data: days.map((d) => d.format('MM-DD')) },
+        series: [{ data: days.map((d) => map[d.format('YYYY-MM-DD')] || 0) }]
+      })
+      this.setEmpty('deviceDaily', !(rows && rows.length))
+    },
+
+    applyAreaDist(rows) {
+      const chart = this._charts && this._charts.area
+      if (!chart) return
+      const list = rows || []
+      chart.setOption({
+        xAxis: { data: list.map((r) => r.province) },
+        series: [{ data: list.map((r) => r.count) }]
+      })
+      this.setEmpty('area', !list.length)
+    },
+
+    applyMessageDaily(rows) {
+      const chart = this._charts && this._charts.messageTrend
+      if (!chart) return
+      const days = this.lastDays(7)
+      const map = {}
+      ;(rows || []).forEach((r) => { map[dayjs(r.time).format('YYYY-MM-DD')] = r.count })
+      chart.setOption({
+        xAxis: { data: days.map((d) => d.format('MM-DD')) },
+        series: [{ data: days.map((d) => map[d.format('YYYY-MM-DD')] || 0) }]
+      })
+      this.setEmpty('messageTrend', !(rows && rows.length), rows ? '暂无数据' : '该项目暂无消息统计')
     }
   }
 }
@@ -1265,6 +1212,14 @@ $text-dim: var(--sc-text-dim-color);
     border-radius: 2px;
     background: linear-gradient(180deg, $accent, $accent-2);
     box-shadow: 0 0 8px rgba(var(--sc-accent-rgb), 0.7);
+  }
+
+  .alarm-sub {
+    margin-left: 10px;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--sc-text-dim-color);
   }
 
   .alarm-badge {
