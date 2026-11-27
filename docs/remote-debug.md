@@ -25,7 +25,7 @@ python3 scripts/erl_cli.py eval "erlang:node()" \
 
 4. 连不上时回到页面查看状态,过期或节点重启过的话重新启动即可。"重新生成"会让旧令牌立即失效。
 
-SKILL 包是前端的静态文件 `public/skills/erl-cli.zip`,只包含 SKILL 部分(`SKILL.md`、`README.md`、`scripts/`),不含 Erlang 应用部分。由 `build/skill-zip.sh` 从后端依赖 `../alinkiot/_build/default/lib/erl_cli` 打包,和后端锁定的 erl-cli 版本一致;erl-cli 升级后重新执行并提交 zip。同一个脚本也负责打包"智能控制"用的 `uzyiot-api.zip`(来自 skill-alinkiot-api)和"智能应用"用的 `alinkiot-app.zip`(来自 skill-alinkiot-app,包含 `framework/`、`themes/`、`references/`)。脚本依赖 `pip install websocket-client`。
+SKILL 包是前端的静态文件 `public/skills/erl-cli.zip`,只包含 SKILL 部分(`SKILL.md`、`README.md`、`scripts/`),不含 Erlang 应用部分。由 `build/skill-zip.sh` 从后端依赖 `../alinkiot/_build/default/lib/erl_cli` 打包,和后端锁定的 erl-cli 版本一致;erl-cli 升级后重新执行并提交 zip。同一个脚本也负责打包"智能控制"用的 `uzyiot-api.zip`(来自 skill-alinkiot-api)、"智能应用"用的 `alinkiot-app.zip`(来自 skill-alinkiot-app,包含 `framework/`、`themes/`、`references/`)和"虚拟设备"用的 `alinkiot-vdevice.zip`(来自 skill-alinkiot-vdevice)。脚本依赖 `pip install websocket-client`。
 
 端口:直连后端用 `dashboard.port`(默认 18888);经 nginx 访问用 nginx 的端口。`erl_cli.py` 只支持 `ws://`,不支持 `wss://`,所以不能直接连 https 域名。
 
@@ -35,7 +35,7 @@ SKILL 包是前端的静态文件 `public/skills/erl-cli.zip`,只包含 SKILL �
 |---|---|
 | 令牌存储(mnesia 内存表)与认证 | `alinkiot_data/src/alinkdata_remote_auth.erl` |
 | 接口 `GET /system/remote/status`、`POST /system/remote/start`、`POST /system/remote/stop` | `alinkiot_data/src/service/alinkdata_remote_service.erl`,路由与权限在 `swagger_global.json` |
-| 菜单与权限 | `alinkiot-compose/init/mysql/migrations/20261127_menu_is_top_remote_debug.sql`,`20261127_agent_ops_menu.sql`(移到"智能体运维"下),`20261128_agent_app_menu.sql`(应用生成,后改名"智能应用"),`20261128_agent_menu_rename_reorder.sql`(改名"智能体应用"并排到仪表盘之后) |
+| 菜单与权限 | `alinkiot-compose/init/mysql/migrations/20261127_menu_is_top_remote_debug.sql`,`20261127_agent_ops_menu.sql`(移到"智能体运维"下),`20261128_agent_app_menu.sql`(应用生成,后改名"智能应用"),`20261128_agent_menu_rename_reorder.sql`(改名"智能体应用"并排到仪表盘之后),`20261128_agent_vdevice_menu.sql`(虚拟设备) |
 | 前端页面 | `src/views/system/remote/index.vue`,`src/api/system/remote.js` |
 
 认证规则(`alinkdata_remote_auth:check_auth/2`)有两条,满足任意一条即放行:
