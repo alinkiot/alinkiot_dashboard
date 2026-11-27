@@ -195,6 +195,17 @@ export default {
     }
     this.getList();
   },
+  watch: {
+    // 设备列表标签页被缓存复用，从产品详情带不同产品跳转过来时需重新过滤
+    '$route.query.product'(id) {
+      if (!id || !this.$route.meta || this.$route.meta.component !== 'iot/device/index') return;
+      this.product = { id };
+      this.fixParams = this.fixParams.filter(i => i.key !== 'product');
+      this.fixParams.push({ key: 'product', value: id });
+      this.queryParams.pageNum = 1;
+      this.getList();
+    }
+  },
   methods: {
     reset() {
       this.nodeType = [];

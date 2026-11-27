@@ -52,6 +52,8 @@ import {getObject, updateObject} from "@/api/iot/table";
 import ProductForm from "@/views/iot/product/components/productForm.vue";
 import {checkRegx, randomString} from "@/assets/js/iot";
 
+import path from "path";
+
 export default {
   components: {
     ProductForm,
@@ -81,7 +83,8 @@ export default {
       tipDialogOpen: false,
       tipContent: '',
       buttons: [
-        {icon: 'el-icon-edit-outline', key: 'editProduct', title:'编辑' }
+        {icon: 'el-icon-edit-outline', key: 'editProduct', title:'编辑' },
+        {icon: 'el-icon-s-platform', key: 'goDevices', title:'查看设备' }
       ],
       keyFormRule:{
         key: [
@@ -123,6 +126,8 @@ export default {
       console.log(column);
       if(column.key === 'editProduct'){
         this.openEditDialog = true;
+      }else if(column.key === 'goDevices'){
+        this.goDeviceList();
       }else if(column.key === 'ps' || column.key === 'pk'){
         this.secret = {
           key: this.product.pk,
@@ -130,6 +135,22 @@ export default {
         }
         this.openSecretSelector = true;
       }
+    },
+    // 在侧边栏菜单里找设备列表（组件 iot/device/index，优先不带固定查询条件的），带上产品过滤条件跳转
+    goDeviceList() {
+      const hits = [];
+      const walk = (routes, base) => {
+        (routes || []).forEach(r => {
+          const full = path.resolve(base, r.path || '');
+          if (r.meta && r.meta.component === 'iot/device/index') hits.push({ path: full, hasQuery: !!r.query });
+          if (r.children) walk(r.children, full);
+        });
+      };
+      walk(this.$store.getters.sidebarRouters, '/');
+      const hit = hits.find(i => !i.hasQuery) || hits[0];
+      const project = this.$route.params.project;
+      const target = hit ? hit.path : (project ? '/' + project : '') + '/device/deviceIndex';
+      this.$router.push({ path: target, query: { product: this.product.id } });
     },
     createSecret: function(){
       this.secret.value = randomString(16);
